@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">KAN</string>
+    <string name="screen_time_channel_name">KAN Tracking</string>
+    <string name="screen_time_channel_description">Keeps KAN screen-time tracking and the floating pill active.</string>
+</resources>

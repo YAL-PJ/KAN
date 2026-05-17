@@ -15,23 +15,25 @@ Use this document as the master checklist for taking KAN from the current GitHub
 
 ### Repository basics
 
-- [ ] Add a project `README.md` with app purpose, setup steps, and test instructions.
-- [ ] Add the Gradle wrapper files:
-  - [ ] `gradlew`
-  - [ ] `gradlew.bat`
-  - [ ] `gradle/wrapper/gradle-wrapper.jar`
-  - [ ] `gradle/wrapper/gradle-wrapper.properties`
+- [x] Add a project `README.md` with app purpose, setup steps, and test instructions.
+  - Note: Added `README.md` with app purpose, setup, build/test commands, release notes template, and production reminders.
+- [x] Add the Gradle wrapper files:
+  - [x] `gradlew`
+  - [x] `gradlew.bat`
+  - [x] `gradle/wrapper/gradle-wrapper.jar`
+  - [x] `gradle/wrapper/gradle-wrapper.properties`
 - [ ] Confirm a fresh clone builds without manually installing a specific Gradle version.
-- [ ] Confirm `.gitignore` excludes local machine files such as `local.properties`, build output, IDE caches, and signing secrets.
-- [ ] Document required local tooling:
-  - [ ] Android Studio version
-  - [ ] Android SDK version
-  - [ ] JDK version
-  - [ ] Emulator/device requirements
+- [x] Confirm `.gitignore` excludes local machine files such as `local.properties`, build output, IDE caches, and signing secrets.
+- [x] Document required local tooling:
+  - [x] Android Studio version
+  - [x] Android SDK version
+  - [x] JDK version
+  - [x] Emulator/device requirements
 
 ### Clean build checks
 
-- [ ] Run a debug build from a clean clone:
+- [x] Run a debug build from a clean clone:
+  - Note: `./gradlew :app:assembleDebug` passed after Java/SDK setup and the app was installed/tested on a real Android phone.
 
   ```bash
   ./gradlew :app:assembleDebug
@@ -66,11 +68,11 @@ Use this document as the master checklist for taking KAN from the current GitHub
 - [ ] Decide the current release version name.
 - [ ] Confirm `versionCode` is higher than the version currently uploaded to Google Play.
 - [ ] Confirm `versionName` matches the intended public release label.
-- [ ] Add a release note template to the repo.
-- [ ] Create a simple versioning rule, for example:
-  - [ ] Bug fix release: `1.0.1`, `1.0.2`, etc.
-  - [ ] Feature release: `1.1.0`, `1.2.0`, etc.
-  - [ ] Major change: `2.0.0`.
+- [x] Add a release note template to the repo.
+- [x] Create a simple versioning rule, for example:
+  - [x] Bug fix release: `1.0.1`, `1.0.2`, etc.
+  - [x] Feature release: `1.1.0`, `1.2.0`, etc.
+  - [x] Major change: `2.0.0`.
 
 ### Signing
 
@@ -86,7 +88,8 @@ Use this document as the master checklist for taking KAN from the current GitHub
 
 ### First launch
 
-- [ ] App opens without crashing on a fresh install.
+- [x] App opens without crashing on a fresh install.
+  - Note: User verified the app is running on a real Android phone.
 - [ ] App clearly explains what KAN does before asking for sensitive permissions.
 - [ ] App explains that tracking uses a foreground service.
 - [ ] App explains why the floating pill needs overlay permission.
@@ -440,8 +443,9 @@ Test at least these categories before production:
 KAN is production-ready only when all of these are true:
 
 - [ ] Fresh clone builds successfully.
-- [ ] Gradle wrapper is committed.
-- [ ] Debug build installs on a real phone.
+- [x] Gradle wrapper is committed.
+- [x] Debug build installs on a real phone.
+  - Note: User verified the app is running on a real Android phone.
 - [ ] Release AAB builds successfully.
 - [ ] Release AAB uploads to Google Play internal testing.
 - [ ] App installs from Google Play internal testing.

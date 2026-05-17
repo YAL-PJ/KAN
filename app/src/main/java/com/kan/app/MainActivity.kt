@@ -12,7 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,11 +27,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -109,7 +109,11 @@ private fun KanApp(
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = KanColors.Background,
+        contentColor = KanColors.TextPrimary,
+    ) {
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(0.dp),
@@ -135,52 +139,64 @@ private fun MainHubScreen(
 ) {
     KanScaffold {
         Text(
-            text = "KAN.",
-            fontSize = 38.sp,
+            text = "KAN",
+            fontSize = 42.sp,
             fontWeight = FontWeight.Black,
-            letterSpacing = (-1).sp,
-        )
-        Spacer(Modifier.height(64.dp))
-        SectionLabel("DAILY BUDGET")
-        Text(
-            text = "${snapshot.dailyScreenSeconds.toClockTime()} / ${snapshot.dailyBudgetSeconds.toClockTime()}",
-            fontSize = 31.sp,
-            fontWeight = FontWeight.Light,
-            letterSpacing = (-0.8).sp,
+            letterSpacing = (-1.8).sp,
+            color = KanColors.TextPrimary,
         )
         Text(
-            text = "${snapshot.dailyBudgetStreak}-Day Budget Streak",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 10.dp),
+            text = "DISCIPLINE DASHBOARD",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 2.4.sp,
+            color = KanColors.TextTertiary,
+            modifier = Modifier.padding(top = 8.dp),
         )
-        Spacer(Modifier.height(52.dp))
+
+        Spacer(Modifier.height(72.dp))
+
+        CeremonialMetric(
+            label = "DAILY BUDGET",
+            primary = snapshot.dailyScreenSeconds.toClockTime(),
+            secondary = "/ ${snapshot.dailyBudgetSeconds.toClockTime()}",
+            support = "${snapshot.dailyBudgetStreak}-day budget streak",
+        )
+
+        Spacer(Modifier.height(56.dp))
         Hairline()
-        Spacer(Modifier.height(44.dp))
-        SectionLabel("CONTINUOUS ABSENCE")
-        Text(
-            text = "All-Time Record: ${snapshot.allTimeAbsenceRecordSeconds.toHumanDuration()}",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Light,
-            letterSpacing = (-0.4).sp,
+        Spacer(Modifier.height(56.dp))
+
+        CeremonialMetric(
+            label = "CONTINUOUS ABSENCE",
+            primary = snapshot.allTimeAbsenceRecordSeconds.toHumanDuration(),
+            secondary = "record",
+            support = "Last session ${snapshot.lastAbsenceSeconds.toHumanDuration()}",
         )
-        Text(
-            text = "Last Session: ${snapshot.lastAbsenceSeconds.toHumanDuration()}",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 10.dp),
-        )
+
         if (!hasOverlayPermission) {
-            Spacer(Modifier.height(36.dp))
-            TextButton(onClick = onRequestOverlayPermission) {
-                Text("Enable floating pill")
+            Spacer(Modifier.height(40.dp))
+            TextButton(
+                onClick = onRequestOverlayPermission,
+                colors = TextButtonDefaults.textButtonColors(contentColor = KanColors.Accent),
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    text = "Grant overlay access",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.4.sp,
+                )
             }
         }
+
         Spacer(Modifier.weight(1f))
         Text(
-            text = "Swipe for history →",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.48f),
+            text = "HISTORY / SETTINGS  —  SWIPE LEFT",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.6.sp,
+            color = KanColors.TextMuted,
         )
     }
 }
@@ -192,38 +208,66 @@ private fun HistorySettingsScreen(
 ) {
     val budgetHours = snapshot.dailyBudgetSeconds / 3_600f
     KanScaffold {
-        SectionLabel("HISTORY")
-        Spacer(Modifier.height(20.dp))
+        Text(
+            text = "HISTORY",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Light,
+            letterSpacing = (-0.5).sp,
+            color = KanColors.TextPrimary,
+        )
+        Spacer(Modifier.height(34.dp))
         if (snapshot.history.isEmpty()) {
             Text(
-                text = "Your first completed day will appear here.",
-                fontSize = 18.sp,
+                text = "A completed day will appear here.",
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Light,
+                color = KanColors.TextSecondary,
+                lineHeight = 24.sp,
             )
         } else {
             snapshot.history.forEach { entry ->
                 HistoryRow(entry)
             }
         }
-        Spacer(Modifier.height(44.dp))
+
+        Spacer(Modifier.height(54.dp))
         Hairline()
-        Spacer(Modifier.height(44.dp))
-        SectionLabel("SETTINGS")
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(54.dp))
+
+        SectionLabel("DAILY SCREEN BUDGET")
+        Spacer(Modifier.height(22.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
         ) {
-            Text("Daily Screen Budget", fontSize = 18.sp, fontWeight = FontWeight.Light)
-            Text("%.1f Hrs".format(budgetHours), fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = "Limit",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Light,
+                color = KanColors.TextSecondary,
+            )
+            Text(
+                text = "%.1f HRS".format(budgetHours),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = (-0.3).sp,
+                color = KanColors.TextPrimary,
+            )
         }
         Slider(
             value = budgetHours,
             onValueChange = onBudgetHoursChanged,
             valueRange = 0.5f..12f,
             steps = 22,
-            modifier = Modifier.padding(top = 22.dp),
+            colors = SliderDefaults.colors(
+                thumbColor = KanColors.Accent,
+                activeTrackColor = KanColors.Accent,
+                inactiveTrackColor = KanColors.Hairline,
+                activeTickColor = KanColors.Accent.copy(alpha = 0.42f),
+                inactiveTickColor = KanColors.TextMuted,
+            ),
+            modifier = Modifier.padding(top = 28.dp),
         )
     }
 }
@@ -231,19 +275,31 @@ private fun HistorySettingsScreen(
 @Composable
 private fun HistoryRow(entry: DailyHistoryEntry) {
     val label = entry.date.format(DateTimeFormatter.ofPattern("EEE"))
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-        Text(
-            text = "${entry.screenSeconds.toHumanDuration()} Screen | Peak ${entry.peakAbsenceSeconds.toHumanDuration()}${if (entry.metBudget) " ✓" else ""}",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Light,
-            textAlign = TextAlign.End,
-        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label.uppercase(),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.8.sp,
+                color = KanColors.TextTertiary,
+            )
+            Text(
+                text = "${entry.screenSeconds.toHumanDuration()} SCREEN  /  ${entry.peakAbsenceSeconds.toHumanDuration()} PEAK${if (entry.metBudget) "  ✓" else ""}",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = 0.2.sp,
+                textAlign = TextAlign.End,
+                color = if (entry.metBudget) KanColors.TextPrimary else KanColors.TextSecondary,
+            )
+        }
+        Hairline(alpha = 0.08f)
     }
 }
 
@@ -252,13 +308,55 @@ private fun KanScaffold(content: @Composable ColumnScope.() -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(KanColors.Background),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 28.dp, vertical = 48.dp),
+                .padding(horizontal = 34.dp, vertical = 56.dp),
             content = content,
+        )
+    }
+}
+
+@Composable
+private fun CeremonialMetric(
+    label: String,
+    primary: String,
+    secondary: String,
+    support: String,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionLabel(label)
+        Spacer(Modifier.height(18.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                text = primary,
+                fontSize = 40.sp,
+                fontWeight = FontWeight.ExtraLight,
+                letterSpacing = (-1.2).sp,
+                color = KanColors.TextPrimary,
+                lineHeight = 44.sp,
+            )
+            Text(
+                text = "  $secondary",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = 0.2.sp,
+                color = KanColors.TextTertiary,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        Text(
+            text = support.uppercase(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.7.sp,
+            color = KanColors.TextSecondary,
+            modifier = Modifier.padding(top = 16.dp),
         )
     }
 }
@@ -267,43 +365,45 @@ private fun KanScaffold(content: @Composable ColumnScope.() -> Unit) {
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.8.sp,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 2.2.sp,
+        color = KanColors.TextTertiary,
     )
 }
 
 @Composable
-private fun Hairline() {
+private fun Hairline(alpha: Float = 1f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+            .background(KanColors.Hairline.copy(alpha = alpha)),
     )
+}
+
+private object KanColors {
+    val Background = Color(0xFF080A0D)
+    val Surface = Color(0xFF0D1014)
+    val TextPrimary = Color(0xFFE7E1D5)
+    val TextSecondary = Color(0xFFB7AFA2)
+    val TextTertiary = Color(0xFF7E766B)
+    val TextMuted = Color(0xFF565047)
+    val Hairline = Color(0xFF2B3037)
+    val Accent = Color(0xFFC2A66B)
 }
 
 @Composable
 private fun KanTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
-    val scheme = if (dark) {
-        darkColorScheme(
-            background = Color.Black,
-            surface = Color.Black,
-            onBackground = Color.White,
-            onSurface = Color.White,
-            primary = Color.White,
-        )
-    } else {
-        lightColorScheme(
-            background = Color(0xFFF7F1E8),
-            surface = Color(0xFFF7F1E8),
-            onBackground = Color(0xFF111111),
-            onSurface = Color(0xFF111111),
-            primary = Color(0xFF111111),
-        )
-    }
+    val scheme = darkColorScheme(
+        background = KanColors.Background,
+        surface = KanColors.Surface,
+        onBackground = KanColors.TextPrimary,
+        onSurface = KanColors.TextPrimary,
+        primary = KanColors.Accent,
+        onPrimary = KanColors.Background,
+        secondary = KanColors.TextSecondary,
+    )
     MaterialTheme(
         colorScheme = scheme,
         typography = MaterialTheme.typography.copy(

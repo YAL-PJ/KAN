@@ -2,6 +2,7 @@ package com.kan.app.service
 
 import android.Manifest
 import android.app.Notification
+import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -20,6 +21,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
@@ -55,7 +57,8 @@ class ScreenTimeService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 Intent.ACTION_SCREEN_OFF -> enterOfflineState()
-                Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT -> enterActiveState()
+                Intent.ACTION_SCREEN_ON -> if (isKeyguardLocked()) showLockedAbsenceState() else enterActiveState()
+                Intent.ACTION_USER_PRESENT -> enterActiveState()
             }
         }
     }
@@ -67,14 +70,14 @@ class ScreenTimeService : Service() {
         createNotificationChannel()
         registerScreenReceiver()
         startForeground(NOTIFICATION_ID_TRACKING, buildTrackingNotification())
-        if (isDeviceInteractive()) enterActiveState() else enterOfflineState()
+        syncCurrentDeviceState()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> stopSelf()
-            ACTION_REFRESH -> if (isDeviceInteractive()) enterActiveState() else enterOfflineState()
-            else -> if (isDeviceInteractive()) enterActiveState() else enterOfflineState()
+            ACTION_REFRESH -> syncCurrentDeviceState()
+            else -> syncCurrentDeviceState()
         }
         return START_STICKY
     }
@@ -103,8 +106,17 @@ class ScreenTimeService : Service() {
         receiverRegistered = true
     }
 
+    private fun syncCurrentDeviceState() {
+        when {
+            !isDeviceInteractive() -> enterOfflineState()
+            isKeyguardLocked() -> showLockedAbsenceState()
+            else -> enterActiveState()
+        }
+    }
+
     private fun enterActiveState() {
         val brokeRecord = repository.finishAbsence()
+        updateTrackingNotification()
         if (brokeRecord) showRecordNotification()
         ensureOverlay()
         startActiveTicker()
@@ -116,16 +128,33 @@ class ScreenTimeService : Service() {
         updateOverlayText()
         removeOverlay()
         repository.beginAbsence()
+        updateTrackingNotification()
+    }
+
+    private fun showLockedAbsenceState() {
+        activeTicker?.cancel()
+        activeTicker = null
+        updateOverlayText()
+        removeOverlay()
+        repository.ensureAbsenceStarted()
+        updateTrackingNotification()
     }
 
     private fun startActiveTicker() {
         if (activeTicker?.isActive == true) return
         activeTicker = serviceScope.launch {
+            var lastTickMillis = SystemClock.elapsedRealtime()
             while (isActive) {
-                repository.ensureCurrentDay()
-                repository.addActiveSecond()
-                updateOverlayText()
                 delay(1_000L)
+                val nowMillis = SystemClock.elapsedRealtime()
+                val elapsedSeconds = (nowMillis - lastTickMillis) / 1_000L
+                if (elapsedSeconds > 0L) {
+                    repository.addActiveSeconds(elapsedSeconds)
+                    lastTickMillis += elapsedSeconds * 1_000L
+                } else {
+                    repository.ensureCurrentDay()
+                }
+                updateOverlayText()
             }
         }
     }
@@ -226,6 +255,10 @@ class ScreenTimeService : Service() {
         overlayParams = null
     }
 
+    private fun updateTrackingNotification() {
+        startForeground(NOTIFICATION_ID_TRACKING, buildTrackingNotification())
+    }
+
     private fun buildTrackingNotification(): Notification {
         val launchIntent = PendingIntent.getActivity(
             this,
@@ -240,13 +273,27 @@ class ScreenTimeService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
+        val snapshot = repository.snapshots.value
+        val isAbsent = snapshot.currentAbsenceStartedAtMillis > 0L
+        val absenceElapsedMillis = repository.currentAbsenceElapsedMillis()
+        val chronometerWhenMillis = System.currentTimeMillis() - absenceElapsedMillis
+
         return NotificationCompat.Builder(this, CHANNEL_ID_TRACKING)
             .setSmallIcon(R.drawable.ic_kan_notification)
-            .setContentTitle("KAN is here")
-            .setContentText("Tracking active screen time and offline presence.")
+            .setContentTitle(if (isAbsent) "Off screen for" else "KAN is here")
+            .setContentText(
+                if (isAbsent) {
+                    "Stay locked to keep this streak going."
+                } else {
+                    "Tracking active screen time and offline presence."
+                },
+            )
             .setContentIntent(launchIntent)
             .setOngoing(true)
-            .setShowWhen(false)
+            .setWhen(chronometerWhenMillis)
+            .setShowWhen(isAbsent)
+            .setUsesChronometer(isAbsent)
+            .setChronometerCountDown(false)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(0, "Overlay permission", overlaySettingsIntent)
@@ -303,6 +350,11 @@ class ScreenTimeService : Service() {
     }
 
     private fun isDeviceInteractive(): Boolean = getSystemService(PowerManager::class.java).isInteractive
+
+    private fun isKeyguardLocked(): Boolean {
+        val keyguardManager = getSystemService(KeyguardManager::class.java)
+        return keyguardManager?.isKeyguardLocked ?: false
+    }
 
     private fun Int.coerceAt(minimum: Int): Int = coerceAtLeast(minimum)
 

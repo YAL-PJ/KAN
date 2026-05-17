@@ -2,6 +2,7 @@ package com.kan.app.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.SystemClock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,37 +19,87 @@ class ScreenTimeRepository private constructor(context: Context) {
     val snapshots: StateFlow<KanSnapshot> = snapshotFlow.asStateFlow()
 
     fun addActiveSecond(nowMillis: Long = System.currentTimeMillis()) {
+        addActiveSeconds(1L, nowMillis)
+    }
+
+    fun addActiveSeconds(seconds: Long, nowMillis: Long = System.currentTimeMillis()) {
+        val safeSeconds = seconds.coerceAtLeast(0L)
+        if (safeSeconds == 0L) return
+
         ensureCurrentDay(nowMillis)
         prefs.edit()
-            .putLong(KEY_DAILY_SCREEN_SECONDS, prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L) + 1L)
+            .putLong(KEY_DAILY_SCREEN_SECONDS, prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L) + safeSeconds)
             .applyAndPublish()
     }
 
-    fun beginAbsence(nowMillis: Long = System.currentTimeMillis()) {
+    fun beginAbsence(
+        nowMillis: Long = System.currentTimeMillis(),
+        elapsedRealtimeMillis: Long = SystemClock.elapsedRealtime(),
+    ) {
         ensureCurrentDay(nowMillis)
         prefs.edit()
             .putLong(KEY_ABSENCE_STARTED_AT, nowMillis)
+            .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, elapsedRealtimeMillis)
             .applyAndPublish()
     }
 
-    fun finishAbsence(nowMillis: Long = System.currentTimeMillis()): Boolean {
+    fun ensureAbsenceStarted(
+        nowMillis: Long = System.currentTimeMillis(),
+        elapsedRealtimeMillis: Long = SystemClock.elapsedRealtime(),
+    ) {
+        ensureCurrentDay(nowMillis)
+        if (prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L) > 0L) return
+
+        prefs.edit()
+            .putLong(KEY_ABSENCE_STARTED_AT, nowMillis)
+            .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, elapsedRealtimeMillis)
+            .applyAndPublish()
+    }
+
+    fun finishAbsence(
+        nowMillis: Long = System.currentTimeMillis(),
+        elapsedRealtimeMillis: Long = SystemClock.elapsedRealtime(),
+    ): Boolean {
         ensureCurrentDay(nowMillis)
         val startedAt = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L)
         if (startedAt <= 0L) return false
 
-        val elapsedSeconds = ((nowMillis - startedAt) / 1_000L).coerceAtLeast(0L)
+        val elapsedSeconds = (currentAbsenceElapsedMillis(nowMillis, elapsedRealtimeMillis) / 1_000L).coerceAtLeast(0L)
         val dailyPeak = maxOf(prefs.getLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L), elapsedSeconds)
         val currentBest = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L)
         val brokeRecord = elapsedSeconds > currentBest
 
         prefs.edit()
             .putLong(KEY_ABSENCE_STARTED_AT, 0L)
+            .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, 0L)
             .putLong(KEY_LAST_ABSENCE_SECONDS, elapsedSeconds)
             .putLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, dailyPeak)
             .putLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, maxOf(currentBest, elapsedSeconds))
             .applyAndPublish()
 
         return brokeRecord
+    }
+
+    fun currentAbsenceElapsedMillis(
+        nowMillis: Long = System.currentTimeMillis(),
+        elapsedRealtimeMillis: Long = SystemClock.elapsedRealtime(),
+    ): Long {
+        val startedAt = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L)
+        if (startedAt <= 0L) return 0L
+
+        val startedAtElapsedRealtime = prefs.getLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, 0L)
+        val elapsedRealtimeDelta = elapsedRealtimeMillis - startedAtElapsedRealtime
+        val currentBootStartedAfterAbsence = nowMillis - elapsedRealtimeMillis > startedAt
+        val elapsedMillis = if (
+            startedAtElapsedRealtime > 0L &&
+            elapsedRealtimeDelta >= 0L &&
+            !currentBootStartedAfterAbsence
+        ) {
+            elapsedRealtimeDelta
+        } else {
+            nowMillis - startedAt
+        }
+        return elapsedMillis.coerceAtLeast(0L)
     }
 
     fun persistOverlayPosition(x: Int, y: Int) {
@@ -86,6 +137,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_DAILY_SCREEN_SECONDS, 0L)
             .putLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L)
             .putLong(KEY_ABSENCE_STARTED_AT, 0L)
+            .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, 0L)
             .putInt(KEY_DAILY_BUDGET_STREAK, nextStreak)
             .putString(KEY_HISTORY, encodedHistory)
             .applyAndPublish()
@@ -139,6 +191,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_DAILY_BUDGET_STREAK = "daily_budget_streak"
         private const val KEY_DAILY_PEAK_ABSENCE_SECONDS = "daily_peak_absence_seconds"
         private const val KEY_ABSENCE_STARTED_AT = "absence_started_at"
+        private const val KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME = "absence_started_at_elapsed_realtime"
         private const val KEY_LAST_ABSENCE_SECONDS = "last_absence_seconds"
         private const val KEY_ALL_TIME_ABSENCE_RECORD_SECONDS = "all_time_absence_record_seconds"
         private const val KEY_OVERLAY_X = "overlay_x"

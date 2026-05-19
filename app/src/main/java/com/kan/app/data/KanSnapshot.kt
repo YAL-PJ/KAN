@@ -1,20 +1,14 @@
 package com.kan.app.data
 
+import com.kan.app.core.LockTimerMode
 import java.time.LocalDate
-
-data class DailyHistoryEntry(
-    val date: LocalDate,
-    val screenSeconds: Long,
-    val peakAbsenceSeconds: Long,
-    val metBudget: Boolean,
-)
 
 data class KanSnapshot(
     val today: LocalDate,
     val dailyScreenSeconds: Long,
     val dailyBudgetSeconds: Long,
     val dailyBudgetStreak: Int,
-    val lockTimerMode: Int,
+    val lockTimerMode: LockTimerMode,
     val currentAbsenceStartedAtMillis: Long,
     val lastAbsenceSeconds: Long,
     val allTimeAbsenceRecordSeconds: Long,

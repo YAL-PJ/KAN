@@ -16,7 +16,7 @@
         android:theme="@style/Theme.KAN">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,7 +25,7 @@
         </activity>
 
         <activity
-            android:name=".LockTimerActivity"
+            android:name=".ui.LockTimerActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"

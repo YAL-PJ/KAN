@@ -51,6 +51,8 @@ import com.kan.app.data.ScreenTimeRepository
 import com.kan.app.domain.toClockTime
 import com.kan.app.domain.toHumanDuration
 import com.kan.app.service.ScreenTimeService
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +77,7 @@ class MainActivity : ComponentActivity() {
                     onRequestOverlayPermission = ::openOverlaySettings,
                     onBudgetHoursChanged = repository::updateDailyBudgetHours,
                     onLockTimerModeChanged = repository::updateLockTimerMode,
+                    buildStamp = buildStamp(),
                 )
             }
         }
@@ -95,6 +98,14 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
     }
 
+    private fun buildStamp(): String {
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val installedAt = Instant.ofEpochMilli(packageInfo.lastUpdateTime)
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        return "debug v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · updated $installedAt"
+    }
+
     private fun startTrackingService() {
         ScreenTimeService.start(this)
     }
@@ -108,6 +119,7 @@ private fun KanApp(
     onRequestOverlayPermission: () -> Unit,
     onBudgetHoursChanged: (Float) -> Unit,
     onLockTimerModeChanged: (Int) -> Unit,
+    buildStamp: String,
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
 
@@ -128,6 +140,7 @@ private fun KanApp(
                     onRequestOverlayPermission = onRequestOverlayPermission,
                     lockTimerMode = snapshot.lockTimerMode,
                     onLockTimerModeChanged = onLockTimerModeChanged,
+                    buildStamp = buildStamp,
                 )
                 1 -> HistorySettingsScreen(snapshot, onBudgetHoursChanged)
             }
@@ -142,6 +155,7 @@ private fun MainHubScreen(
     onRequestOverlayPermission: () -> Unit,
     lockTimerMode: Int,
     onLockTimerModeChanged: (Int) -> Unit,
+    buildStamp: String,
 ) {
     KanScaffold {
         Text(
@@ -217,6 +231,14 @@ private fun MainHubScreen(
                 )
             }
         }
+
+        Spacer(Modifier.height(24.dp))
+        Text(
+            text = buildStamp,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Light,
+            color = KanColors.TextMuted,
+        )
 
         Spacer(Modifier.weight(1f))
         Text(

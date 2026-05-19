@@ -3,6 +3,7 @@ package com.kan.app.data
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
+import com.kan.app.core.LockTimerMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,10 +18,6 @@ class ScreenTimeRepository private constructor(context: Context) {
     private val snapshotFlow = MutableStateFlow(readSnapshot())
 
     val snapshots: StateFlow<KanSnapshot> = snapshotFlow.asStateFlow()
-
-    fun addActiveSecond(nowMillis: Long = System.currentTimeMillis()) {
-        addActiveSeconds(1L, nowMillis)
-    }
 
     fun addActiveSeconds(seconds: Long, nowMillis: Long = System.currentTimeMillis()) {
         val safeSeconds = seconds.coerceAtLeast(0L)
@@ -64,7 +61,8 @@ class ScreenTimeRepository private constructor(context: Context) {
         val startedAt = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L)
         if (startedAt <= 0L) return false
 
-        val elapsedSeconds = (currentAbsenceElapsedMillis(nowMillis, elapsedRealtimeMillis) / 1_000L).coerceAtLeast(0L)
+        val elapsedSeconds = (currentAbsenceElapsedMillis(nowMillis, elapsedRealtimeMillis) / 1_000L)
+            .coerceAtLeast(0L)
         val dailyPeak = maxOf(prefs.getLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L), elapsedSeconds)
         val currentBest = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L)
         val brokeRecord = elapsedSeconds > currentBest
@@ -110,13 +108,12 @@ class ScreenTimeRepository private constructor(context: Context) {
     }
 
     fun updateDailyBudgetHours(hours: Float) {
-        val seconds = (hours.coerceIn(0.5f, 12f) * 3_600f).toLong()
+        val seconds = (hours.coerceIn(MIN_BUDGET_HOURS, MAX_BUDGET_HOURS) * SECONDS_PER_HOUR).toLong()
         prefs.edit().putLong(KEY_DAILY_BUDGET_SECONDS, seconds).applyAndPublish()
     }
 
-    fun updateLockTimerMode(mode: Int) {
-        val normalizedMode = mode.coerceIn(LOCK_TIMER_MODE_CHRONOMETER, LOCK_TIMER_MODE_BANNER)
-        prefs.edit().putInt(KEY_LOCK_TIMER_MODE, normalizedMode).applyAndPublish()
+    fun updateLockTimerMode(mode: LockTimerMode) {
+        prefs.edit().putInt(KEY_LOCK_TIMER_MODE, mode.storageValue).applyAndPublish()
     }
 
     fun ensureCurrentDay(nowMillis: Long = System.currentTimeMillis()) {
@@ -133,9 +130,9 @@ class ScreenTimeRepository private constructor(context: Context) {
         val budget = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS)
         val metBudget = previousScreen <= budget
         val nextStreak = if (metBudget) prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0) + 1 else 0
-        val encodedHistory = buildHistoryString(
-            listOf(DailyHistoryEntry(storedDate, previousScreen, previousPeak, metBudget)) + readHistory(),
-        )
+        val updatedHistory = listOf(
+            DailyHistoryEntry(storedDate, previousScreen, previousPeak, metBudget),
+        ) + readHistory()
 
         prefs.edit()
             .putString(KEY_CURRENT_DATE, today.toString())
@@ -144,7 +141,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_ABSENCE_STARTED_AT, 0L)
             .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, 0L)
             .putInt(KEY_DAILY_BUDGET_STREAK, nextStreak)
-            .putString(KEY_HISTORY, encodedHistory)
+            .putString(KEY_HISTORY, HistorySerializer.encode(updatedHistory, HISTORY_LIMIT))
             .applyAndPublish()
     }
 
@@ -155,7 +152,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             dailyScreenSeconds = prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L),
             dailyBudgetSeconds = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS),
             dailyBudgetStreak = prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0),
-            lockTimerMode = prefs.getInt(KEY_LOCK_TIMER_MODE, LOCK_TIMER_MODE_CHRONOMETER),
+            lockTimerMode = LockTimerMode.fromStorageValue(prefs.getInt(KEY_LOCK_TIMER_MODE, 0)),
             currentAbsenceStartedAtMillis = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L),
             lastAbsenceSeconds = prefs.getLong(KEY_LAST_ABSENCE_SECONDS, 0L),
             allTimeAbsenceRecordSeconds = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L),
@@ -165,24 +162,8 @@ class ScreenTimeRepository private constructor(context: Context) {
         )
     }
 
-    private fun readHistory(): List<DailyHistoryEntry> = prefs.getString(KEY_HISTORY, null)
-        ?.split('\n')
-        ?.mapNotNull { line ->
-            val parts = line.split('|')
-            if (parts.size != 4) return@mapNotNull null
-            DailyHistoryEntry(
-                date = LocalDate.parse(parts[0]),
-                screenSeconds = parts[1].toLongOrNull() ?: 0L,
-                peakAbsenceSeconds = parts[2].toLongOrNull() ?: 0L,
-                metBudget = parts[3].toBooleanStrictOrNull() ?: false,
-            )
-        }
-        ?.take(HISTORY_LIMIT)
-        .orEmpty()
-
-    private fun buildHistoryString(entries: List<DailyHistoryEntry>): String = entries
-        .take(HISTORY_LIMIT)
-        .joinToString("\n") { "${it.date}|${it.screenSeconds}|${it.peakAbsenceSeconds}|${it.metBudget}" }
+    private fun readHistory(): List<DailyHistoryEntry> =
+        HistorySerializer.decode(prefs.getString(KEY_HISTORY, null), HISTORY_LIMIT)
 
     private fun SharedPreferences.Editor.applyAndPublish() {
         apply()
@@ -204,14 +185,15 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_OVERLAY_Y = "overlay_y"
         private const val KEY_HISTORY = "history"
         private const val KEY_LOCK_TIMER_MODE = "lock_timer_mode"
+
+        private const val SECONDS_PER_HOUR = 3_600f
         private const val DEFAULT_DAILY_BUDGET_SECONDS = 2L * 60L * 60L
         private const val DEFAULT_OVERLAY_X = 0
         private const val DEFAULT_OVERLAY_Y = 240
         private const val HISTORY_LIMIT = 7
 
-        const val LOCK_TIMER_MODE_CHRONOMETER = 0
-        const val LOCK_TIMER_MODE_FULL_SCREEN = 1
-        const val LOCK_TIMER_MODE_BANNER = 2
+        const val MIN_BUDGET_HOURS = 0.5f
+        const val MAX_BUDGET_HOURS = 12f
 
         @Volatile
         private var instance: ScreenTimeRepository? = null

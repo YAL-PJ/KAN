@@ -114,6 +114,11 @@ class ScreenTimeRepository private constructor(context: Context) {
         prefs.edit().putLong(KEY_DAILY_BUDGET_SECONDS, seconds).applyAndPublish()
     }
 
+    fun updateLockTimerMode(mode: Int) {
+        val normalizedMode = mode.coerceIn(LOCK_TIMER_MODE_CHRONOMETER, LOCK_TIMER_MODE_BANNER)
+        prefs.edit().putInt(KEY_LOCK_TIMER_MODE, normalizedMode).applyAndPublish()
+    }
+
     fun ensureCurrentDay(nowMillis: Long = System.currentTimeMillis()) {
         val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
         val storedDate = LocalDate.parse(prefs.getString(KEY_CURRENT_DATE, today.toString()) ?: today.toString())
@@ -150,6 +155,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             dailyScreenSeconds = prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L),
             dailyBudgetSeconds = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS),
             dailyBudgetStreak = prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0),
+            lockTimerMode = prefs.getInt(KEY_LOCK_TIMER_MODE, LOCK_TIMER_MODE_CHRONOMETER),
             currentAbsenceStartedAtMillis = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L),
             lastAbsenceSeconds = prefs.getLong(KEY_LAST_ABSENCE_SECONDS, 0L),
             allTimeAbsenceRecordSeconds = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L),
@@ -197,10 +203,15 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_OVERLAY_X = "overlay_x"
         private const val KEY_OVERLAY_Y = "overlay_y"
         private const val KEY_HISTORY = "history"
+        private const val KEY_LOCK_TIMER_MODE = "lock_timer_mode"
         private const val DEFAULT_DAILY_BUDGET_SECONDS = 2L * 60L * 60L
         private const val DEFAULT_OVERLAY_X = 0
         private const val DEFAULT_OVERLAY_Y = 240
         private const val HISTORY_LIMIT = 7
+
+        const val LOCK_TIMER_MODE_CHRONOMETER = 0
+        const val LOCK_TIMER_MODE_FULL_SCREEN = 1
+        const val LOCK_TIMER_MODE_BANNER = 2
 
         @Volatile
         private var instance: ScreenTimeRepository? = null

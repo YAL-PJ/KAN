@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -74,6 +75,7 @@ class MainActivity : ComponentActivity() {
                     hasOverlayPermission = Settings.canDrawOverlays(this),
                     onRequestOverlayPermission = ::openOverlaySettings,
                     onBudgetHoursChanged = repository::updateDailyBudgetHours,
+                    onLockTimerModeChanged = repository::updateLockTimerMode,
                 )
             }
         }
@@ -106,6 +108,7 @@ private fun KanApp(
     hasOverlayPermission: Boolean,
     onRequestOverlayPermission: () -> Unit,
     onBudgetHoursChanged: (Float) -> Unit,
+    onLockTimerModeChanged: (Int) -> Unit,
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
 
@@ -124,6 +127,8 @@ private fun KanApp(
                     snapshot = snapshot,
                     hasOverlayPermission = hasOverlayPermission,
                     onRequestOverlayPermission = onRequestOverlayPermission,
+                    lockTimerMode = snapshot.lockTimerMode,
+                    onLockTimerModeChanged = onLockTimerModeChanged,
                 )
                 1 -> HistorySettingsScreen(snapshot, onBudgetHoursChanged)
             }
@@ -136,6 +141,8 @@ private fun MainHubScreen(
     snapshot: KanSnapshot,
     hasOverlayPermission: Boolean,
     onRequestOverlayPermission: () -> Unit,
+    lockTimerMode: Int,
+    onLockTimerModeChanged: (Int) -> Unit,
 ) {
     KanScaffold {
         Text(
@@ -157,10 +164,10 @@ private fun MainHubScreen(
         Spacer(Modifier.height(72.dp))
 
         CeremonialMetric(
-            label = "DAILY BUDGET",
+            label = "SCREEN TIME",
             primary = snapshot.dailyScreenSeconds.toClockTime(),
             secondary = "/ ${snapshot.dailyBudgetSeconds.toClockTime()}",
-            support = "${snapshot.dailyBudgetStreak}-day budget streak",
+            support = "${snapshot.dailyBudgetStreak}-day streak; floating timer mirrors this",
         )
 
         Spacer(Modifier.height(56.dp))
@@ -168,10 +175,32 @@ private fun MainHubScreen(
         Spacer(Modifier.height(56.dp))
 
         CeremonialMetric(
-            label = "CONTINUOUS ABSENCE",
+            label = "ABSENCE TIME",
             primary = snapshot.allTimeAbsenceRecordSeconds.toHumanDuration(),
             secondary = "record",
-            support = "Last session ${snapshot.lastAbsenceSeconds.toHumanDuration()}",
+            support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()}; mode below controls lock-screen behavior",
+        )
+
+        Spacer(Modifier.height(34.dp))
+        SectionLabel("DEV: LOCK SCREEN TIMER MODE")
+        Spacer(Modifier.height(10.dp))
+        LockTimerModeOption(
+            title = "Option A: Passive chronometer",
+            subtitle = "Standard low-priority ongoing notification timer.",
+            selected = lockTimerMode == ScreenTimeRepository.LOCK_TIMER_MODE_CHRONOMETER,
+            onSelect = { onLockTimerModeChanged(ScreenTimeRepository.LOCK_TIMER_MODE_CHRONOMETER) },
+        )
+        LockTimerModeOption(
+            title = "Option B: Full-screen takeover",
+            subtitle = "Launches a large lock-screen timer activity.",
+            selected = lockTimerMode == ScreenTimeRepository.LOCK_TIMER_MODE_FULL_SCREEN,
+            onSelect = { onLockTimerModeChanged(ScreenTimeRepository.LOCK_TIMER_MODE_FULL_SCREEN) },
+        )
+        LockTimerModeOption(
+            title = "Option C: Heads-up banner",
+            subtitle = "Triggers a high-priority banner with live absence value.",
+            selected = lockTimerMode == ScreenTimeRepository.LOCK_TIMER_MODE_BANNER,
+            onSelect = { onLockTimerModeChanged(ScreenTimeRepository.LOCK_TIMER_MODE_BANNER) },
         )
 
         if (!hasOverlayPermission) {
@@ -182,7 +211,7 @@ private fun MainHubScreen(
                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 10.dp),
             ) {
                 Text(
-                    text = "Grant overlay access",
+                    text = "Grant floating timer access",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.4.sp,
@@ -198,6 +227,37 @@ private fun MainHubScreen(
             letterSpacing = 1.6.sp,
             color = KanColors.TextMuted,
         )
+    }
+}
+
+@Composable
+private fun LockTimerModeOption(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onSelect)
+        Column(modifier = Modifier.padding(start = 8.dp)) {
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = KanColors.TextPrimary,
+            )
+            Text(
+                text = subtitle,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Light,
+                color = KanColors.TextSecondary,
+            )
+        }
     }
 }
 

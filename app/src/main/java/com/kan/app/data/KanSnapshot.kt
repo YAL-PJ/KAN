@@ -14,6 +14,7 @@ data class KanSnapshot(
     val dailyScreenSeconds: Long,
     val dailyBudgetSeconds: Long,
     val dailyBudgetStreak: Int,
+    val lockTimerMode: Int,
     val currentAbsenceStartedAtMillis: Long,
     val lastAbsenceSeconds: Long,
     val allTimeAbsenceRecordSeconds: Long,

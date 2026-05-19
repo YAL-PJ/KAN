@@ -24,6 +24,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".LockTimerActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:noHistory="true"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.KAN" />
+
         <service
             android:name=".service.ScreenTimeService"
             android:enabled="true"
@@ -31,7 +40,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="persistent real-time screen time reflection with a user-visible floating overlay" />
+                android:value="persistent screen-time and absence tracking with floating and lock-screen timers" />
         </service>
 
         <receiver

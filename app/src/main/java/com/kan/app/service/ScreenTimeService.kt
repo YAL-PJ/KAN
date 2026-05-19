@@ -31,6 +31,7 @@ import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.kan.app.LockTimerActivity
 import com.kan.app.MainActivity
 import com.kan.app.R
 import com.kan.app.data.ScreenTimeRepository
@@ -137,7 +138,19 @@ class ScreenTimeService : Service() {
         updateOverlayText()
         removeOverlay()
         repository.ensureAbsenceStarted()
-        updateTrackingNotification()
+        when (repository.snapshots.value.lockTimerMode) {
+            ScreenTimeRepository.LOCK_TIMER_MODE_FULL_SCREEN -> {
+                updateTrackingNotification()
+                launchLockScreenTimer()
+            }
+            ScreenTimeRepository.LOCK_TIMER_MODE_BANNER -> showAbsenceBannerNotification()
+            else -> updateTrackingNotification()
+        }
+    }
+
+    private fun launchLockScreenTimer() {
+        if (!isDeviceInteractive() || !isKeyguardLocked()) return
+        startActivity(LockTimerActivity.createIntent(this))
     }
 
     private fun startActiveTicker() {
@@ -280,10 +293,10 @@ class ScreenTimeService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID_TRACKING)
             .setSmallIcon(R.drawable.ic_kan_notification)
-            .setContentTitle(if (isAbsent) "Off screen for" else "KAN is here")
+            .setContentTitle(if (isAbsent) "Absence time" else "KAN is here")
             .setContentText(
                 if (isAbsent) {
-                    "Stay locked to keep this streak going."
+                    "Live absence timer while the phone is locked."
                 } else {
                     "Tracking active screen time and offline presence."
                 },
@@ -295,9 +308,39 @@ class ScreenTimeService : Service() {
             .setUsesChronometer(isAbsent)
             .setChronometerCountDown(false)
             .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOnlyAlertOnce(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(
+                if (isAbsent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_LOW,
+            )
             .addAction(0, "Overlay permission", overlaySettingsIntent)
             .build()
+    }
+
+
+    private fun showAbsenceBannerNotification() {
+        val launchIntent = PendingIntent.getActivity(
+            this,
+            2,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val absenceSeconds = (repository.currentAbsenceElapsedMillis() / 1_000L).coerceAtLeast(0L)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID_TRACKING)
+            .setSmallIcon(R.drawable.ic_kan_notification)
+            .setContentTitle("Absence Time: ${absenceSeconds.toClockTime()}")
+            .setContentText("Heads-up mode test while locked.")
+            .setContentIntent(launchIntent)
+            .setWhen(System.currentTimeMillis())
+            .setShowWhen(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOnlyAlertOnce(false)
+            .setAutoCancel(false)
+            .build()
+        startForeground(NOTIFICATION_ID_TRACKING, notification)
     }
 
     private fun showRecordNotification() {
@@ -323,9 +366,10 @@ class ScreenTimeService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID_TRACKING,
             getString(R.string.screen_time_channel_name),
-            NotificationManager.IMPORTANCE_LOW,
+            NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = getString(R.string.screen_time_channel_description)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setShowBadge(false)
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)

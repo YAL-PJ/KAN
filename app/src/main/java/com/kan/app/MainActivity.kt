@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
@@ -32,7 +33,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -207,7 +207,7 @@ private fun MainHubScreen(
             Spacer(Modifier.height(40.dp))
             TextButton(
                 onClick = onRequestOverlayPermission,
-                colors = TextButtonDefaults.textButtonColors(contentColor = KanColors.Accent),
+                colors = ButtonDefaults.textButtonColors(contentColor = KanColors.Accent),
                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 10.dp),
             ) {
                 Text(

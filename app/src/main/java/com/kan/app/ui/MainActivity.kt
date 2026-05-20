@@ -2,7 +2,6 @@ package com.kan.app.ui
 
 import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -10,10 +9,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
-import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kan.app.R
 import com.kan.app.data.ScreenTimeRepository
 import com.kan.app.service.ScreenTimeService
 import com.kan.app.ui.screens.KanApp
@@ -27,21 +26,23 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { startTrackingService() }
+    ) { /* result handled by onboarding flow */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         repository = ScreenTimeRepository.get(this)
-        requestNotificationPermissionIfNeeded()
-        startTrackingService()
+        if (repository.isOnboardingCompleted()) startTrackingService()
 
         setContent {
             val snapshot by repository.snapshots.collectAsStateWithLifecycle()
             KanTheme {
                 KanApp(
                     snapshot = snapshot,
+                    appName = getString(R.string.app_name),
                     hasOverlayPermission = Settings.canDrawOverlays(this),
                     onRequestOverlayPermission = ::openOverlaySettings,
+                    onRequestNotificationPermission = ::requestNotificationPermission,
+                    onFinishOnboarding = ::finishOnboarding,
                     onBudgetHoursChanged = repository::updateDailyBudgetHours,
                     onLockTimerModeChanged = repository::updateLockTimerMode,
                     buildStamp = buildStamp(),
@@ -52,14 +53,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        startTrackingService()
+        if (repository.isOnboardingCompleted()) startTrackingService()
     }
 
-    private fun requestNotificationPermissionIfNeeded() {
+    private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        if (granted) return
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
@@ -67,6 +65,11 @@ class MainActivity : ComponentActivity() {
         startActivity(
             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri()),
         )
+    }
+
+    private fun finishOnboarding() {
+        repository.markOnboardingCompleted()
+        startTrackingService()
     }
 
     private fun startTrackingService() {

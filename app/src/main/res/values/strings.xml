@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">I IN</string>
     <string name="screen_time_channel_name">I IN Tracking</string>
-    <string name="screen_time_channel_description">Keeps I IN tracking, the floating pill, and the lock-screen absence timer active.</string>
+    <string name="screen_time_channel_description">Keeps I IN tracking phone time, the floating pill, and the lock-screen time-away timer active.</string>
 </resources>

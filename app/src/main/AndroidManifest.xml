@@ -40,7 +40,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="persistent screen-time and absence tracking with floating and lock-screen timers" />
+                android:value="persistent phone-time and time-away tracking with floating and lock-screen timers" />
         </service>
 
         <receiver

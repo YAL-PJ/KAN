@@ -116,6 +116,13 @@ class ScreenTimeRepository private constructor(context: Context) {
         prefs.edit().putInt(KEY_LOCK_TIMER_MODE, mode.storageValue).applyAndPublish()
     }
 
+    fun isOnboardingCompleted(): Boolean = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+
+    fun markOnboardingCompleted() {
+        if (prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)) return
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, true).applyAndPublish()
+    }
+
     fun ensureCurrentDay(nowMillis: Long = System.currentTimeMillis()) {
         val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
         val storedDate = LocalDate.parse(prefs.getString(KEY_CURRENT_DATE, today.toString()) ?: today.toString())
@@ -159,6 +166,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             overlayX = prefs.getInt(KEY_OVERLAY_X, DEFAULT_OVERLAY_X),
             overlayY = prefs.getInt(KEY_OVERLAY_Y, DEFAULT_OVERLAY_Y),
             history = readHistory(),
+            onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false),
         )
     }
 
@@ -185,6 +193,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_OVERLAY_Y = "overlay_y"
         private const val KEY_HISTORY = "history"
         private const val KEY_LOCK_TIMER_MODE = "lock_timer_mode"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 
         private const val SECONDS_PER_HOUR = 3_600f
         private const val DEFAULT_DAILY_BUDGET_SECONDS = 2L * 60L * 60L

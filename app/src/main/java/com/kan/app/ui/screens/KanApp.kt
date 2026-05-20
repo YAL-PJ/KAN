@@ -17,8 +17,11 @@ import com.kan.app.ui.theme.KanColors
 @Composable
 fun KanApp(
     snapshot: KanSnapshot,
+    appName: String,
     hasOverlayPermission: Boolean,
     onRequestOverlayPermission: () -> Unit,
+    onRequestNotificationPermission: () -> Unit,
+    onFinishOnboarding: () -> Unit,
     onBudgetHoursChanged: (Float) -> Unit,
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
     buildStamp: String,
@@ -30,6 +33,16 @@ fun KanApp(
         color = KanColors.Background,
         contentColor = KanColors.TextPrimary,
     ) {
+        if (!snapshot.onboardingCompleted) {
+            OnboardingScreen(
+                appName = appName,
+                onRequestNotificationPermission = onRequestNotificationPermission,
+                onRequestOverlayPermission = onRequestOverlayPermission,
+                onFinish = onFinishOnboarding,
+            )
+            return@Surface
+        }
+
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(0.dp),

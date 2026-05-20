@@ -15,4 +15,5 @@ data class KanSnapshot(
     val overlayX: Int,
     val overlayY: Int,
     val history: List<DailyHistoryEntry>,
+    val onboardingCompleted: Boolean,
 )

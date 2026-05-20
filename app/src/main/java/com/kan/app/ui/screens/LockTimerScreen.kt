@@ -56,7 +56,7 @@ fun LockTimerScreen(elapsedSeconds: Long) {
                 PrismaticBeam(heightDp = 28, widthDp = 2)
                 Spacer(Modifier.height(28.dp))
                 Text(
-                    text = "ABSENCE",
+                    text = "TIME AWAY",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 4.sp,

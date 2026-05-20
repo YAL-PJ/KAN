@@ -42,7 +42,7 @@ fun MainHubScreen(
 
         FloatingPanel {
             CeremonialMetric(
-                label = "SCREEN TIME",
+                label = "PHONE TIME",
                 primary = snapshot.dailyScreenSeconds.toClockTime(),
                 secondary = "/ ${snapshot.dailyBudgetSeconds.toClockTime()}",
                 support = "${snapshot.dailyBudgetStreak}-day streak; floating timer mirrors this",
@@ -53,10 +53,10 @@ fun MainHubScreen(
 
         FloatingPanel {
             CeremonialMetric(
-                label = "ABSENCE TIME",
+                label = "TIME AWAY",
                 primary = snapshot.allTimeAbsenceRecordSeconds.toHumanDuration(),
                 secondary = "record",
-                support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()}; mode below controls lock-screen behavior",
+                support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()} away; mode below controls lock-screen behavior",
             )
             Spacer(Modifier.height(24.dp))
             LockTimerModeSelector(
@@ -206,6 +206,6 @@ private val LockTimerModeOptions = listOf(
     LockTimerModeOptionSpec(
         mode = LockTimerMode.Banner,
         title = "Option C: Heads-up banner",
-        subtitle = "Triggers a high-priority banner with live absence value.",
+        subtitle = "Triggers a high-priority banner with live time-away value.",
     ),
 )

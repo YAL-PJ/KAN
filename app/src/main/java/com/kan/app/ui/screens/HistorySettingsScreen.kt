@@ -21,8 +21,9 @@ import com.kan.app.data.DailyHistoryEntry
 import com.kan.app.data.KanSnapshot
 import com.kan.app.data.ScreenTimeRepository
 import com.kan.app.domain.toHumanDuration
+import com.kan.app.ui.components.FloatingPanel
+import com.kan.app.ui.components.GuardingScaffold
 import com.kan.app.ui.components.Hairline
-import com.kan.app.ui.components.KanScaffold
 import com.kan.app.ui.components.SectionLabel
 import com.kan.app.ui.theme.KanColors
 import java.time.format.DateTimeFormatter
@@ -36,24 +37,55 @@ fun HistorySettingsScreen(
     onBudgetHoursChanged: (Float) -> Unit,
 ) {
     val budgetHours = snapshot.dailyBudgetSeconds / SECONDS_PER_HOUR
-    KanScaffold {
+    GuardingScaffold {
+        Header()
+
+        Spacer(Modifier.height(36.dp))
+
+        FloatingPanel {
+            SectionLabel("DAILY LEDGER")
+            Spacer(Modifier.height(18.dp))
+            HistoryList(snapshot.history)
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        FloatingPanel {
+            BudgetSlider(
+                budgetHours = budgetHours,
+                onBudgetHoursChanged = onBudgetHoursChanged,
+            )
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Text(
+            text = "MAIN HUB    ←    SWIPE RIGHT",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.8.sp,
+            color = KanColors.TextMuted,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun Header() {
+    Column {
         Text(
             text = "HISTORY",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Light,
-            letterSpacing = (-0.5).sp,
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Thin,
+            letterSpacing = 2.sp,
             color = KanColors.TextPrimary,
         )
-        Spacer(Modifier.height(34.dp))
-        HistoryList(snapshot.history)
-
-        Spacer(Modifier.height(54.dp))
-        Hairline()
-        Spacer(Modifier.height(54.dp))
-
-        BudgetSlider(
-            budgetHours = budgetHours,
-            onBudgetHoursChanged = onBudgetHoursChanged,
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "INSIDE THE CIRCLE  ·  WHAT THE PERIMETER HELD",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 2.4.sp,
+            color = KanColors.TextTertiary,
         )
     }
 }
@@ -63,44 +95,46 @@ private fun HistoryList(entries: List<DailyHistoryEntry>) {
     if (entries.isEmpty()) {
         Text(
             text = "A completed day will appear here.",
-            fontSize = 17.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Light,
             color = KanColors.TextSecondary,
-            lineHeight = 24.sp,
+            lineHeight = 22.sp,
         )
         return
     }
-    entries.forEach { HistoryRow(it) }
+    entries.forEachIndexed { index, entry ->
+        HistoryRow(entry)
+        if (index < entries.lastIndex) {
+            Hairline(alpha = 0.5f)
+        }
+    }
 }
 
 @Composable
 private fun HistoryRow(entry: DailyHistoryEntry) {
     val label = entry.date.format(WeekdayFormatter)
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label.uppercase(),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.8.sp,
-                color = KanColors.TextTertiary,
-            )
-            Text(
-                text = "${entry.screenSeconds.toHumanDuration()} SCREEN  /  ${entry.peakAbsenceSeconds.toHumanDuration()} PEAK${if (entry.metBudget) "  ✓" else ""}",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Light,
-                letterSpacing = 0.2.sp,
-                textAlign = TextAlign.End,
-                color = if (entry.metBudget) KanColors.TextPrimary else KanColors.TextSecondary,
-            )
-        }
-        Hairline(alpha = 0.08f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label.uppercase(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.8.sp,
+            color = KanColors.TextTertiary,
+        )
+        Text(
+            text = "${entry.screenSeconds.toHumanDuration()} SCREEN  /  ${entry.peakAbsenceSeconds.toHumanDuration()} PEAK${if (entry.metBudget) "  ✓" else ""}",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Light,
+            letterSpacing = 0.2.sp,
+            textAlign = TextAlign.End,
+            color = if (entry.metBudget) KanColors.TextPrimary else KanColors.TextSecondary,
+        )
     }
 }
 
@@ -110,7 +144,7 @@ private fun BudgetSlider(
     onBudgetHoursChanged: (Float) -> Unit,
 ) {
     SectionLabel("DAILY SCREEN BUDGET")
-    Spacer(Modifier.height(22.dp))
+    Spacer(Modifier.height(18.dp))
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,7 +152,7 @@ private fun BudgetSlider(
     ) {
         Text(
             text = "Limit",
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Light,
             color = KanColors.TextSecondary,
         )
@@ -136,12 +170,12 @@ private fun BudgetSlider(
         valueRange = ScreenTimeRepository.MIN_BUDGET_HOURS..ScreenTimeRepository.MAX_BUDGET_HOURS,
         steps = 22,
         colors = SliderDefaults.colors(
-            thumbColor = KanColors.Accent,
-            activeTrackColor = KanColors.Accent,
+            thumbColor = KanColors.SteelHighlight,
+            activeTrackColor = KanColors.Steel,
             inactiveTrackColor = KanColors.Hairline,
-            activeTickColor = KanColors.Accent.copy(alpha = 0.42f),
+            activeTickColor = KanColors.Steel.copy(alpha = 0.42f),
             inactiveTickColor = KanColors.TextMuted,
         ),
-        modifier = Modifier.padding(top = 28.dp),
+        modifier = Modifier.padding(top = 18.dp),
     )
 }

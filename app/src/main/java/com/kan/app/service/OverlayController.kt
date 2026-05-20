@@ -54,20 +54,22 @@ class OverlayController(
 
     private fun buildPillView(initialText: String): TextView = TextView(context).apply {
         text = initialText
-        setTextColor(Color.rgb(18, 18, 18))
-        textSize = 13f
-        typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        letterSpacing = 0.08f
+        setTextColor(Color.rgb(233, 236, 241))
+        textSize = 12f
+        typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+        letterSpacing = 0.14f
         includeFontPadding = false
         gravity = Gravity.CENTER
-        setPadding(dp(14), dp(8), dp(14), dp(8))
+        setPadding(dp(16), dp(9), dp(16), dp(9))
         background = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = dp(22).toFloat()
-            setColor(Color.argb(190, 248, 244, 237))
-            setStroke(dp(1), Color.argb(68, 15, 15, 15))
+            cornerRadius = dp(24).toFloat()
+            // Deep void interior — the same world the rest of the app lives in.
+            setColor(Color.argb(220, 10, 13, 19))
+            // Brushed-steel guarding edge.
+            setStroke(dp(1), Color.argb(165, 194, 200, 209))
         }
-        elevation = dp(10).toFloat()
+        elevation = dp(14).toFloat()
     }
 
     private fun buildLayoutParams(initialX: Int, initialY: Int): WindowManager.LayoutParams =

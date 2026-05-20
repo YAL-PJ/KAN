@@ -3,8 +3,8 @@
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:navigationBarColor">#080A0D</item>
-        <item name="android:statusBarColor">#080A0D</item>
-        <item name="android:windowBackground">#080A0D</item>
+        <item name="android:navigationBarColor">#04060A</item>
+        <item name="android:statusBarColor">#04060A</item>
+        <item name="android:windowBackground">#04060A</item>
     </style>
 </resources>

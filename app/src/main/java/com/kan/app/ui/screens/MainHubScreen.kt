@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,8 +22,8 @@ import com.kan.app.data.KanSnapshot
 import com.kan.app.domain.toClockTime
 import com.kan.app.domain.toHumanDuration
 import com.kan.app.ui.components.CeremonialMetric
-import com.kan.app.ui.components.Hairline
-import com.kan.app.ui.components.KanScaffold
+import com.kan.app.ui.components.FloatingPanel
+import com.kan.app.ui.components.GuardingScaffold
 import com.kan.app.ui.components.SectionLabel
 import com.kan.app.ui.theme.KanColors
 
@@ -34,76 +35,84 @@ fun MainHubScreen(
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
     buildStamp: String,
 ) {
-    KanScaffold {
+    GuardingScaffold {
         Header()
 
-        Spacer(Modifier.height(72.dp))
+        Spacer(Modifier.height(48.dp))
 
-        CeremonialMetric(
-            label = "SCREEN TIME",
-            primary = snapshot.dailyScreenSeconds.toClockTime(),
-            secondary = "/ ${snapshot.dailyBudgetSeconds.toClockTime()}",
-            support = "${snapshot.dailyBudgetStreak}-day streak; floating timer mirrors this",
-        )
-
-        Spacer(Modifier.height(56.dp))
-        Hairline()
-        Spacer(Modifier.height(56.dp))
-
-        CeremonialMetric(
-            label = "ABSENCE TIME",
-            primary = snapshot.allTimeAbsenceRecordSeconds.toHumanDuration(),
-            secondary = "record",
-            support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()}; mode below controls lock-screen behavior",
-        )
-
-        Spacer(Modifier.height(34.dp))
-        LockTimerModeSelector(
-            selectedMode = snapshot.lockTimerMode,
-            onModeSelected = onLockTimerModeChanged,
-        )
-
-        if (!hasOverlayPermission) {
-            Spacer(Modifier.height(40.dp))
-            OverlayPermissionButton(onRequestOverlayPermission)
+        FloatingPanel {
+            CeremonialMetric(
+                label = "SCREEN TIME",
+                primary = snapshot.dailyScreenSeconds.toClockTime(),
+                secondary = "/ ${snapshot.dailyBudgetSeconds.toClockTime()}",
+                support = "${snapshot.dailyBudgetStreak}-day streak; floating timer mirrors this",
+            )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
+
+        FloatingPanel {
+            CeremonialMetric(
+                label = "ABSENCE TIME",
+                primary = snapshot.allTimeAbsenceRecordSeconds.toHumanDuration(),
+                secondary = "record",
+                support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()}; mode below controls lock-screen behavior",
+            )
+            Spacer(Modifier.height(24.dp))
+            LockTimerModeSelector(
+                selectedMode = snapshot.lockTimerMode,
+                onModeSelected = onLockTimerModeChanged,
+            )
+        }
+
+        if (!hasOverlayPermission) {
+            Spacer(Modifier.height(20.dp))
+            FloatingPanel {
+                OverlayPermissionButton(onRequestOverlayPermission)
+            }
+        }
+
+        Spacer(Modifier.height(36.dp))
         Text(
             text = buildStamp,
             fontSize = 10.sp,
             fontWeight = FontWeight.Light,
             color = KanColors.TextMuted,
+            modifier = Modifier.padding(start = 4.dp),
         )
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(40.dp))
         Text(
-            text = "HISTORY / SETTINGS  —  SWIPE LEFT",
+            text = "HISTORY  /  SETTINGS    →    SWIPE LEFT",
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.6.sp,
+            letterSpacing = 1.8.sp,
             color = KanColors.TextMuted,
+            modifier = Modifier.padding(start = 4.dp),
         )
     }
 }
 
 @Composable
 private fun Header() {
-    Text(
-        text = "KAN",
-        fontSize = 42.sp,
-        fontWeight = FontWeight.Black,
-        letterSpacing = (-1.8).sp,
-        color = KanColors.TextPrimary,
-    )
-    Text(
-        text = "DISCIPLINE DASHBOARD",
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 2.4.sp,
-        color = KanColors.TextTertiary,
-        modifier = Modifier.padding(top = 8.dp),
-    )
+    Column {
+        Text(
+            text = "I  IN",
+            fontSize = 56.sp,
+            fontWeight = FontWeight.Thin,
+            letterSpacing = 8.sp,
+            color = KanColors.TextPrimary,
+            lineHeight = 56.sp,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "GUARDING CIRCLE  ·  FOCUS PERIMETER",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 2.6.sp,
+            color = KanColors.TextTertiary,
+        )
+    }
 }
 
 @Composable
@@ -111,8 +120,8 @@ private fun LockTimerModeSelector(
     selectedMode: LockTimerMode,
     onModeSelected: (LockTimerMode) -> Unit,
 ) {
-    SectionLabel("DEV: LOCK SCREEN TIMER MODE")
-    Spacer(Modifier.height(10.dp))
+    SectionLabel("LOCK-SCREEN TIMER MODE")
+    Spacer(Modifier.height(12.dp))
     LockTimerModeOptions.forEach { option ->
         LockTimerModeOption(
             title = option.title,
@@ -136,7 +145,14 @@ private fun LockTimerModeOption(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onSelect)
+        RadioButton(
+            selected = selected,
+            onClick = onSelect,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = KanColors.Steel,
+                unselectedColor = KanColors.TextTertiary,
+            ),
+        )
         Column(modifier = Modifier.padding(start = 8.dp)) {
             Text(
                 text = title,
@@ -158,14 +174,14 @@ private fun LockTimerModeOption(
 private fun OverlayPermissionButton(onClick: () -> Unit) {
     TextButton(
         onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 10.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 6.dp),
     ) {
         Text(
-            text = "Grant floating timer access",
+            text = "GRANT FLOATING TIMER ACCESS",
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.4.sp,
-            color = KanColors.Accent,
+            letterSpacing = 1.8.sp,
+            color = KanColors.Steel,
         )
     }
 }

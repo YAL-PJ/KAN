@@ -51,12 +51,12 @@ internal object TrackingNotifications {
         chronometerBaseMillis: Long,
     ): Notification = NotificationCompat.Builder(context, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_kan_notification)
-        .setContentTitle(if (isAbsent) "Absence time" else "KAN is here")
+        .setContentTitle(if (isAbsent) "Time away" else "I IN is watching")
         .setContentText(
             if (isAbsent) {
-                "Live absence timer while the phone is locked."
+                "Phone is down. The timer is growing."
             } else {
-                "Tracking active screen time and offline presence."
+                "Tracking phone time and time away."
             },
         )
         .setContentIntent(launchIntent(context, REQUEST_CODE_LAUNCH))
@@ -78,7 +78,7 @@ internal object TrackingNotifications {
     fun buildAbsenceBanner(context: Context, absenceSeconds: Long): Notification =
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_kan_notification)
-            .setContentTitle("Absence Time: ${absenceSeconds.toClockTime()}")
+            .setContentTitle("Time Away: ${absenceSeconds.toClockTime()}")
             .setContentText("Heads-up mode test while locked.")
             .setContentIntent(launchIntent(context, REQUEST_CODE_BANNER_LAUNCH))
             .setWhen(System.currentTimeMillis())
@@ -94,8 +94,8 @@ internal object TrackingNotifications {
         if (!canPostNotifications(context)) return
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_kan_notification)
-            .setContentTitle("New presence record")
-            .setContentText("You stayed offline for ${recordSeconds.toClockTime()}.")
+            .setContentTitle("New time-away record")
+            .setContentText("You stayed away for ${recordSeconds.toClockTime()}.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()

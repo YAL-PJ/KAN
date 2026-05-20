@@ -128,7 +128,7 @@ private fun HistoryRow(entry: DailyHistoryEntry) {
             color = KanColors.TextTertiary,
         )
         Text(
-            text = "${entry.screenSeconds.toHumanDuration()} SCREEN  /  ${entry.peakAbsenceSeconds.toHumanDuration()} PEAK${if (entry.metBudget) "  ✓" else ""}",
+            text = "${entry.screenSeconds.toHumanDuration()} PHONE  /  ${entry.peakAbsenceSeconds.toHumanDuration()} AWAY${if (entry.metBudget) "  ✓" else ""}",
             fontSize = 12.sp,
             fontWeight = FontWeight.Light,
             letterSpacing = 0.2.sp,
@@ -143,7 +143,7 @@ private fun BudgetSlider(
     budgetHours: Float,
     onBudgetHoursChanged: (Float) -> Unit,
 ) {
-    SectionLabel("DAILY SCREEN BUDGET")
+    SectionLabel("DAILY PHONE BUDGET")
     Spacer(Modifier.height(18.dp))
     Row(
         modifier = Modifier.fillMaxWidth(),

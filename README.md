@@ -14,12 +14,12 @@ KAN is an Android app for tracking daily screen-time budget progress and continu
 
 ## Requirements
 
-Use Android Studio or command-line Android tooling with these minimum expectations:
+Use GitHub Actions for cloud builds, or command-line Android tooling locally:
 
-- **Android Studio:** Current stable Android Studio release recommended.
-- **Android SDK:** Install Android SDK Platform 35 because the app compiles and targets SDK 35.
-- **JDK:** JDK 17.
-- **Device or emulator:** Android 8.0/API 26 or newer. Test on real devices before considering a release production-ready.
+- **GitHub account:** Required to run the hosted build workflow and download artifacts.
+- **Android SDK (local only):** Install Android SDK Platform 35 because the app compiles and targets SDK 35.
+- **JDK (local only):** JDK 17.
+- **Device:** Android 8.0/API 26 or newer for installation tests.
 - **Gradle:** Use the checked-in Gradle wrapper; do not require contributors to install a separate Gradle version.
 
 ## Fresh clone setup
@@ -28,6 +28,21 @@ Use Android Studio or command-line Android tooling with these minimum expectatio
 2. Open the project in Android Studio, or use the command line from the repository root.
 3. If needed, create `local.properties` with your Android SDK path. This file is local-only and must not be committed.
 4. Let Gradle sync using the checked-in wrapper.
+
+## Phone-only build flow (no Android Studio)
+
+If you want a no-Android-Studio flow, use GitHub Actions to compile and then install from your phone:
+
+1. **LLM pushes code** to this repository branch.
+2. **GitHub compiles the app** automatically with the `Build Debug APK` workflow.
+3. On your phone, open the repository in a browser and tap **Actions**.
+4. Open the latest `Build Debug APK` run and wait for the yellow running icon to become a green check.
+5. Scroll to **Artifacts** and tap **debug-apk** to download the artifact zip.
+6. Extract the zip and install `app-debug.apk` on your phone.
+
+Notes:
+- If Android blocks installation, enable install from browser/files for the app you used to open the APK.
+- This workflow is also available manually via **Actions → Build Debug APK → Run workflow**.
 
 ## Build and test commands
 

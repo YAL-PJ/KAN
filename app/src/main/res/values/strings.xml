@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">KAN</string>
-    <string name="screen_time_channel_name">KAN Tracking</string>
-    <string name="screen_time_channel_description">Keeps KAN tracking, the floating pill, and the lock-screen absence timer active.</string>
+    <string name="app_name">I IN</string>
+    <string name="screen_time_channel_name">I IN Tracking</string>
+    <string name="screen_time_channel_description">Keeps I IN tracking, the floating pill, and the lock-screen absence timer active.</string>
 </resources>

@@ -19,61 +19,69 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kan.app.domain.toClockTime
+import com.kan.app.ui.components.GuardingRing
+import com.kan.app.ui.components.PrismaticBeam
 import com.kan.app.ui.theme.KanColors
 
 @Composable
 fun LockTimerScreen(elapsedSeconds: Long) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = KanColors.Background,
+        color = KanColors.Void,
         contentColor = KanColors.TextPrimary,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(KanColors.Background)
-                .padding(horizontal = 32.dp),
-            contentAlignment = Alignment.Center,
+                .background(KanColors.Void),
         ) {
+            GuardingRing(modifier = Modifier.fillMaxSize())
+
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(horizontal = 40.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "KAN",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 3.2.sp,
-                    color = KanColors.TextTertiary,
-                )
-                Spacer(Modifier.height(34.dp))
-                Text(
-                    text = "ABSENCE TIME",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 3.4.sp,
-                    color = KanColors.Accent,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(22.dp))
-                Text(
-                    text = elapsedSeconds.toClockTime(),
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.ExtraLight,
-                    letterSpacing = (-1.8).sp,
-                    color = KanColors.TextPrimary,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(28.dp))
-                Text(
-                    text = "Phone locked. Your screen-time timer is paused.",
+                    text = "I  IN",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Light,
-                    letterSpacing = 0.2.sp,
+                    letterSpacing = 6.sp,
+                    color = KanColors.TextTertiary,
+                )
+                Spacer(Modifier.height(20.dp))
+                PrismaticBeam(heightDp = 28, widthDp = 2)
+                Spacer(Modifier.height(28.dp))
+                Text(
+                    text = "ABSENCE",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 4.sp,
+                    color = KanColors.Steel,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    text = elapsedSeconds.toClockTime(),
+                    fontSize = 64.sp,
+                    fontWeight = FontWeight.ExtraLight,
+                    letterSpacing = (-2.0).sp,
+                    color = KanColors.TextPrimary,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 64.sp,
+                )
+                Spacer(Modifier.height(32.dp))
+                Text(
+                    text = "Phone locked. The circle holds the line.",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 0.4.sp,
                     color = KanColors.TextSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 21.sp,
+                    lineHeight = 20.sp,
                 )
             }
         }

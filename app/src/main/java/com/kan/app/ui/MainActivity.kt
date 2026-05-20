@@ -3,7 +3,6 @@ package com.kan.app.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -12,6 +11,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.PackageInfoCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kan.app.data.ScreenTimeRepository
 import com.kan.app.service.ScreenTimeService
@@ -64,7 +65,7 @@ class MainActivity : ComponentActivity() {
 
     private fun openOverlaySettings() {
         startActivity(
-            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")),
+            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri()),
         )
     }
 
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
             .atZone(ZoneId.systemDefault())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         val versionName = packageInfo.versionName ?: "unknown"
-        val versionCode = packageInfo.longVersionCode
+        val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo)
         return "debug v$versionName ($versionCode) · updated $installedAt"
     }
 }

@@ -13,7 +13,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kan.app.BuildConfig
 import com.kan.app.data.ScreenTimeRepository
 import com.kan.app.service.ScreenTimeService
 import com.kan.app.ui.screens.KanApp
@@ -78,6 +77,8 @@ class MainActivity : ComponentActivity() {
         val installedAt = Instant.ofEpochMilli(packageInfo.lastUpdateTime)
             .atZone(ZoneId.systemDefault())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        return "debug v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · updated $installedAt"
+        val versionName = packageInfo.versionName ?: "unknown"
+        val versionCode = packageInfo.longVersionCode
+        return "debug v$versionName ($versionCode) · updated $installedAt"
     }
 }

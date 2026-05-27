@@ -3,13 +3,17 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- Guarding circle: outer ring drawn as a donut via evenOdd fill -->
+    <!-- Solid badge background so the launcher icon is visible on light themes -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M12,1.6 A10.4,10.4 0 1 0 12.01,1.6 Z" />
+    <!-- Inner ring cutout for brand shape -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M12,1.6 A10.4,10.4 0 1 0 12.01,1.6 Z M12,4.0 A8.0,8.0 0 1 1 11.99,4.0 Z" />
-    <!-- Focal mark: the single vertical bar at the center, the I IN signature -->
+        android:pathData="M12,4.0 A8.0,8.0 0 1 1 11.99,4.0 Z M12,6.1 A5.9,5.9 0 1 0 12.01,6.1 Z" />
+    <!-- Focal mark: the single vertical bar at the center -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M11.2,9.0 h1.6 v6.0 h-1.6 z" />
+        android:pathData="M11.2,8.7 h1.6 v6.6 h-1.6 z" />
 </vector>

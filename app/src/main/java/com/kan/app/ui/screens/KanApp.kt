@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kan.app.core.LockTimerMode
+import com.kan.app.core.OverlayStyle
 import com.kan.app.data.KanSnapshot
 import com.kan.app.ui.theme.KanColors
 
@@ -24,6 +25,7 @@ fun KanApp(
     onFinishOnboarding: () -> Unit,
     onBudgetHoursChanged: (Float) -> Unit,
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
+    onOverlayStyleChanged: (OverlayStyle) -> Unit,
     buildStamp: String,
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
@@ -54,6 +56,7 @@ fun KanApp(
                     hasOverlayPermission = hasOverlayPermission,
                     onRequestOverlayPermission = onRequestOverlayPermission,
                     onLockTimerModeChanged = onLockTimerModeChanged,
+                    onOverlayStyleChanged = onOverlayStyleChanged,
                     buildStamp = buildStamp,
                 )
                 1 -> HistorySettingsScreen(

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kan.app.core.LockTimerMode
+import com.kan.app.core.OverlayStyle
 import com.kan.app.data.KanSnapshot
 import com.kan.app.domain.toClockTime
 import com.kan.app.domain.toHumanDuration
@@ -33,6 +34,7 @@ fun MainHubScreen(
     hasOverlayPermission: Boolean,
     onRequestOverlayPermission: () -> Unit,
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
+    onOverlayStyleChanged: (OverlayStyle) -> Unit,
     buildStamp: String,
 ) {
     GuardingScaffold {
@@ -46,6 +48,15 @@ fun MainHubScreen(
                 primary = snapshot.dailyScreenSeconds.toClockTime(),
                 secondary = "/ ${snapshot.dailyBudgetSeconds.toClockTime()}",
                 support = "${snapshot.dailyBudgetStreak}-day streak; floating timer mirrors this",
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        FloatingPanel {
+            OverlayStyleSelector(
+                selectedStyle = snapshot.overlayStyle,
+                onStyleSelected = onOverlayStyleChanged,
             )
         }
 
@@ -185,6 +196,47 @@ private fun OverlayPermissionButton(onClick: () -> Unit) {
         )
     }
 }
+
+@Composable
+private fun OverlayStyleSelector(
+    selectedStyle: OverlayStyle,
+    onStyleSelected: (OverlayStyle) -> Unit,
+) {
+    SectionLabel("FLOATING TIMER STYLE")
+    Spacer(Modifier.height(12.dp))
+    OverlayStyleOptions.forEach { option ->
+        LockTimerModeOption(
+            title = option.title,
+            subtitle = option.subtitle,
+            selected = selectedStyle == option.style,
+            onSelect = { onStyleSelected(option.style) },
+        )
+    }
+}
+
+private data class OverlayStyleOptionSpec(
+    val style: OverlayStyle,
+    val title: String,
+    val subtitle: String,
+)
+
+private val OverlayStyleOptions = listOf(
+    OverlayStyleOptionSpec(
+        style = OverlayStyle.Bar,
+        title = "Option A: Progress bar",
+        subtitle = "Used / budget time with a thin filling bar underneath.",
+    ),
+    OverlayStyleOptionSpec(
+        style = OverlayStyle.Dots,
+        title = "Option B: Dot row",
+        subtitle = "Time plus six dots that fill as you approach your limit.",
+    ),
+    OverlayStyleOptionSpec(
+        style = OverlayStyle.Ring,
+        title = "Option C: Progress ring",
+        subtitle = "Time alongside a small ring that sweeps toward the limit.",
+    ),
+)
 
 private data class LockTimerModeOptionSpec(
     val mode: LockTimerMode,

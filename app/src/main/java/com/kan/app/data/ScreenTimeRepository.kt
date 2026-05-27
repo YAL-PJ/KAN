@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import com.kan.app.core.LockTimerMode
+import com.kan.app.core.OverlayStyle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -116,6 +117,10 @@ class ScreenTimeRepository private constructor(context: Context) {
         prefs.edit().putInt(KEY_LOCK_TIMER_MODE, mode.storageValue).applyAndPublish()
     }
 
+    fun updateOverlayStyle(style: OverlayStyle) {
+        prefs.edit().putInt(KEY_OVERLAY_STYLE, style.storageValue).applyAndPublish()
+    }
+
     fun isOnboardingCompleted(): Boolean = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
 
     fun markOnboardingCompleted() {
@@ -160,6 +165,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             dailyBudgetSeconds = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS),
             dailyBudgetStreak = prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0),
             lockTimerMode = LockTimerMode.fromStorageValue(prefs.getInt(KEY_LOCK_TIMER_MODE, 0)),
+            overlayStyle = OverlayStyle.fromStorageValue(prefs.getInt(KEY_OVERLAY_STYLE, 0)),
             currentAbsenceStartedAtMillis = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L),
             lastAbsenceSeconds = prefs.getLong(KEY_LAST_ABSENCE_SECONDS, 0L),
             allTimeAbsenceRecordSeconds = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L),
@@ -193,6 +199,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_OVERLAY_Y = "overlay_y"
         private const val KEY_HISTORY = "history"
         private const val KEY_LOCK_TIMER_MODE = "lock_timer_mode"
+        private const val KEY_OVERLAY_STYLE = "overlay_style"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 
         private const val SECONDS_PER_HOUR = 3_600f

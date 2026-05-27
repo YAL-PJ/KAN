@@ -240,7 +240,7 @@ private val LockScreenVisualizationOptions = listOf(
     LockScreenVisualizationOptionSpec(
         visualization = LockScreenVisualization.Pillar,
         title = "Option B: Prism pillar",
-        subtitle = "Tall vertical bar climbs the side of the lock screen.",
+        subtitle = "Three prism bars track day progress, minutes, and live seconds.",
     ),
     LockScreenVisualizationOptionSpec(
         visualization = LockScreenVisualization.Constellation,

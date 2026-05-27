@@ -14,9 +14,10 @@ fun Long.toHumanDuration(): String {
     val duration = Duration.ofSeconds(coerceAtLeast(0L))
     val hours = duration.toHours()
     val minutes = duration.minusHours(hours).toMinutes()
+    val seconds = duration.minusHours(hours).minusMinutes(minutes).seconds
     return when {
-        hours > 0L -> "${hours}h ${minutes}m"
-        minutes > 0L -> "${minutes}m"
-        else -> "${duration.seconds}s"
+        hours > 0L -> "%dh %02dm %02ds".format(hours, minutes, seconds)
+        minutes > 0L -> "%dm %02ds".format(minutes, seconds)
+        else -> "${seconds}s"
     }
 }

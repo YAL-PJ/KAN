@@ -98,7 +98,7 @@ class OverlayController(
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(7), dp(14), dp(8))
         }
-        val label = labelView("PHONE")
+        val label = labelView("SCREEN TIME")
         val time = timeView(13f)
         val bar = HorizontalBarView(context)
 
@@ -124,7 +124,7 @@ class OverlayController(
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(7), dp(14), dp(8))
         }
-        val label = labelView("PHONE")
+        val label = labelView("SCREEN TIME")
         val time = timeView(13f)
         val dots = DotsRowView(context, dotCount = 6)
 
@@ -153,7 +153,7 @@ class OverlayController(
         }
         val ring = RingView(context)
         val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-        val label = labelView("PHONE")
+        val label = labelView("SCREEN TIME")
         val time = timeView(13f)
         column.addView(label)
         column.addView(time, LinearLayout.LayoutParams(LP_WRAP, LP_WRAP).apply { topMargin = dp(1) })

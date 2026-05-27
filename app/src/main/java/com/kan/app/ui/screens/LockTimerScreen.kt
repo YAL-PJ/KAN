@@ -76,6 +76,11 @@ fun LockTimerScreen(
                 } else {
                     null
                 },
+                timerSeconds = if (challengeActive) {
+                    challengeRemainingSeconds.coerceAtLeast(0L)
+                } else {
+                    currentAbsenceSeconds.coerceAtLeast(0L)
+                },
             )
 
             Column(
@@ -271,13 +276,14 @@ private fun VisualizationLayer(
     visualization: LockScreenVisualization,
     todayAwaySeconds: Long,
     challengeProgress: Float?,
+    timerSeconds: Long,
 ) {
     val progress = challengeProgress ?: (todayAwaySeconds.toFloat() / DAY_SECONDS.toFloat())
         .coerceIn(0f, 1f)
 
     when (visualization) {
         LockScreenVisualization.Arc -> ArcGauge(progress = progress)
-        LockScreenVisualization.Pillar -> PillarGauge(progress = progress)
+        LockScreenVisualization.Pillar -> PillarGauge(progress = progress, timerSeconds = timerSeconds)
         LockScreenVisualization.Constellation -> ConstellationGauge(progress = progress)
     }
 }
@@ -328,33 +334,56 @@ private fun ArcGauge(progress: Float) {
 }
 
 @Composable
-private fun PillarGauge(progress: Float) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 28.dp)
-                .width(6.dp)
-                .height(280.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(KanColors.Hairline.copy(alpha = 0.6f)),
-        )
+private fun PillarGauge(progress: Float, timerSeconds: Long) {
+    val safeSeconds = timerSeconds.coerceAtLeast(0L)
+    val secondProgress = (safeSeconds % 60L) / 60f
+    val minuteProgress = ((safeSeconds / 60L) % 60L) / 60f
 
-        Canvas(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 28.dp)
-                .width(6.dp)
-                .height(280.dp),
-        ) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(end = 24.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TickBar(
+            progress = progress.coerceIn(0f, 1f),
+            width = 8.dp,
+            alpha = 1f,
+        )
+        Spacer(Modifier.width(8.dp))
+        TickBar(
+            progress = minuteProgress,
+            width = 6.dp,
+            alpha = 0.8f,
+        )
+        Spacer(Modifier.width(6.dp))
+        TickBar(
+            progress = secondProgress,
+            width = 4.dp,
+            alpha = 0.65f,
+        )
+    }
+}
+
+@Composable
+private fun TickBar(progress: Float, width: androidx.compose.ui.unit.Dp, alpha: Float) {
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(280.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(KanColors.Hairline.copy(alpha = 0.45f * alpha)),
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val filledHeight = size.height * progress.coerceIn(0f, 1f)
             drawRoundRect(
                 brush = Brush.verticalGradient(
-                    0.00f to KanColors.PrismViolet.copy(alpha = 0.85f),
-                    0.30f to KanColors.PrismBlue,
-                    0.55f to KanColors.PrismGreen,
-                    0.80f to KanColors.PrismGold,
-                    1.00f to KanColors.PrismRed.copy(alpha = 0.85f),
+                    0.00f to KanColors.PrismViolet.copy(alpha = 0.9f * alpha),
+                    0.35f to KanColors.PrismBlue.copy(alpha = alpha),
+                    0.60f to KanColors.PrismGreen.copy(alpha = alpha),
+                    0.85f to KanColors.PrismGold.copy(alpha = 0.95f * alpha),
+                    1.00f to KanColors.PrismRed.copy(alpha = 0.9f * alpha),
                 ),
                 topLeft = Offset(0f, size.height - filledHeight),
                 size = Size(size.width, filledHeight),

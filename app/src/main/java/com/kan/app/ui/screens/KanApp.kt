@@ -25,6 +25,7 @@ fun KanApp(
     onRequestNotificationPermission: () -> Unit,
     onFinishOnboarding: () -> Unit,
     onBudgetHoursChanged: (Float) -> Unit,
+    onOverlayEnabledChanged: (Boolean) -> Unit,
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
     onOverlayStyleChanged: (OverlayStyle) -> Unit,
     onLockScreenVisualizationChanged: (LockScreenVisualization) -> Unit,
@@ -65,6 +66,7 @@ fun KanApp(
                 1 -> HistorySettingsScreen(
                     snapshot = snapshot,
                     onBudgetHoursChanged = onBudgetHoursChanged,
+                    onOverlayEnabledChanged = onOverlayEnabledChanged,
                 )
             }
         }

@@ -49,6 +49,7 @@ class ScreenTimeService : Service() {
                 Intent.ACTION_SCREEN_OFF -> enterOfflineState()
                 Intent.ACTION_SCREEN_ON -> if (isKeyguardLocked()) showLockedAbsenceState() else enterActiveState()
                 Intent.ACTION_USER_PRESENT -> enterActiveState()
+                Intent.ACTION_USER_UNLOCKED -> syncCurrentDeviceState()
             }
         }
     }
@@ -71,7 +72,7 @@ class ScreenTimeService : Service() {
     private fun observeStyleChanges() {
         serviceScope.launch {
             repository.snapshots
-                .map { it.overlayStyle }
+                .map { it.overlayStyle to it.overlayEnabled }
                 .distinctUntilChanged()
                 .onEach { refreshOverlay() }
                 .collect {}
@@ -188,6 +189,10 @@ class ScreenTimeService : Service() {
 
     private fun showOverlay() {
         val snapshot = repository.snapshots.value
+        if (!snapshot.overlayEnabled) {
+            overlay.remove()
+            return
+        }
         overlay.show(
             payload = snapshot.toOverlayPayload(),
             initialX = snapshot.overlayX,
@@ -196,7 +201,12 @@ class ScreenTimeService : Service() {
     }
 
     private fun refreshOverlay() {
-        overlay.update(repository.snapshots.value.toOverlayPayload())
+        val snapshot = repository.snapshots.value
+        if (!snapshot.overlayEnabled) {
+            overlay.remove()
+            return
+        }
+        overlay.update(snapshot.toOverlayPayload())
     }
 
     private fun KanSnapshot.toOverlayPayload(): OverlayController.Payload =
@@ -237,6 +247,7 @@ class ScreenTimeService : Service() {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
+            addAction(Intent.ACTION_USER_UNLOCKED)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(screenStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)

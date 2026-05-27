@@ -12,6 +12,7 @@ data class KanSnapshot(
     val dailyBudgetStreak: Int,
     val lockTimerMode: LockTimerMode,
     val overlayStyle: OverlayStyle,
+    val overlayEnabled: Boolean,
     val lockScreenVisualization: LockScreenVisualization,
     val currentAbsenceStartedAtMillis: Long,
     val lastAbsenceSeconds: Long,

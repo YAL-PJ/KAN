@@ -50,7 +50,7 @@ fun GuardingScaffold(
             .fillMaxSize()
             .background(KanColors.Void),
     ) {
-        val ringRadius = minOf(maxWidth, maxHeight) * 0.46f
+        val ringRadius = minOf(maxWidth, maxHeight) * 0.42f
         val verticalPadding = (maxHeight - ringRadius * 2f) / 2f + 20.dp
 
         Column(
@@ -77,7 +77,7 @@ fun GuardingRing(modifier: Modifier = Modifier) {
         val h = size.height
         val cx = w / 2f
         val cy = h / 2f
-        val radius = minOf(w, h) * 0.46f
+        val radius = minOf(w, h) * 0.42f
         val stroke = minOf(w, h) * 0.022f
 
         // Void mask — paint everything outside the ring with the background color
@@ -304,4 +304,3 @@ fun CeremonialMetric(
         )
     }
 }
-

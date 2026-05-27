@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kan.app.core.LockScreenVisualization
 import com.kan.app.core.LockTimerMode
 import com.kan.app.core.OverlayStyle
 import com.kan.app.data.KanSnapshot
@@ -26,6 +27,7 @@ fun KanApp(
     onBudgetHoursChanged: (Float) -> Unit,
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
     onOverlayStyleChanged: (OverlayStyle) -> Unit,
+    onLockScreenVisualizationChanged: (LockScreenVisualization) -> Unit,
     buildStamp: String,
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
@@ -57,6 +59,7 @@ fun KanApp(
                     onRequestOverlayPermission = onRequestOverlayPermission,
                     onLockTimerModeChanged = onLockTimerModeChanged,
                     onOverlayStyleChanged = onOverlayStyleChanged,
+                    onLockScreenVisualizationChanged = onLockScreenVisualizationChanged,
                     buildStamp = buildStamp,
                 )
                 1 -> HistorySettingsScreen(

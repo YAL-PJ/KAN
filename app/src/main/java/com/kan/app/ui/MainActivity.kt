@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                     onBudgetHoursChanged = repository::updateDailyBudgetHours,
                     onLockTimerModeChanged = repository::updateLockTimerMode,
                     onOverlayStyleChanged = repository::updateOverlayStyle,
+                    onLockScreenVisualizationChanged = repository::updateLockScreenVisualization,
                     buildStamp = buildStamp(),
                 )
             }

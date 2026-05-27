@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kan.app.core.LockScreenVisualization
 import com.kan.app.core.LockTimerMode
 import com.kan.app.core.OverlayStyle
 import com.kan.app.data.KanSnapshot
@@ -35,6 +36,7 @@ fun MainHubScreen(
     onRequestOverlayPermission: () -> Unit,
     onLockTimerModeChanged: (LockTimerMode) -> Unit,
     onOverlayStyleChanged: (OverlayStyle) -> Unit,
+    onLockScreenVisualizationChanged: (LockScreenVisualization) -> Unit,
     buildStamp: String,
 ) {
     GuardingScaffold {
@@ -73,6 +75,15 @@ fun MainHubScreen(
             LockTimerModeSelector(
                 selectedMode = snapshot.lockTimerMode,
                 onModeSelected = onLockTimerModeChanged,
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        FloatingPanel {
+            LockScreenVisualizationSelector(
+                selectedVisualization = snapshot.lockScreenVisualization,
+                onVisualizationSelected = onLockScreenVisualizationChanged,
             )
         }
 
@@ -196,6 +207,47 @@ private fun OverlayPermissionButton(onClick: () -> Unit) {
         )
     }
 }
+
+@Composable
+private fun LockScreenVisualizationSelector(
+    selectedVisualization: LockScreenVisualization,
+    onVisualizationSelected: (LockScreenVisualization) -> Unit,
+) {
+    SectionLabel("LOCK-SCREEN ACHIEVEMENT VISUAL")
+    Spacer(Modifier.height(12.dp))
+    LockScreenVisualizationOptions.forEach { option ->
+        LockTimerModeOption(
+            title = option.title,
+            subtitle = option.subtitle,
+            selected = selectedVisualization == option.visualization,
+            onSelect = { onVisualizationSelected(option.visualization) },
+        )
+    }
+}
+
+private data class LockScreenVisualizationOptionSpec(
+    val visualization: LockScreenVisualization,
+    val title: String,
+    val subtitle: String,
+)
+
+private val LockScreenVisualizationOptions = listOf(
+    LockScreenVisualizationOptionSpec(
+        visualization = LockScreenVisualization.Arc,
+        title = "Option A: Arc gauge",
+        subtitle = "Curved prismatic arc fills as your away-time grows toward a day.",
+    ),
+    LockScreenVisualizationOptionSpec(
+        visualization = LockScreenVisualization.Pillar,
+        title = "Option B: Prism pillar",
+        subtitle = "Tall vertical bar climbs the side of the lock screen.",
+    ),
+    LockScreenVisualizationOptionSpec(
+        visualization = LockScreenVisualization.Constellation,
+        title = "Option C: Constellation",
+        subtitle = "Twenty-four dots ring the screen, lighting hour by hour.",
+    ),
+)
 
 @Composable
 private fun OverlayStyleSelector(

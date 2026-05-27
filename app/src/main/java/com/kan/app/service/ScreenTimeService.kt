@@ -107,6 +107,7 @@ class ScreenTimeService : Service() {
     }
 
     private fun enterActiveState() {
+        repository.recoverActiveTimeOnRestart()
         val brokeRecord = repository.finishAbsence()
         postTrackingNotification()
         if (brokeRecord) {
@@ -132,7 +133,7 @@ class ScreenTimeService : Service() {
         repository.ensureAbsenceStarted()
         when (repository.snapshots.value.lockTimerMode) {
             LockTimerMode.FullScreen -> {
-                postTrackingNotification()
+                postTrackingNotification(asFullScreenIntent = true)
                 launchLockScreenTimer()
             }
             LockTimerMode.Banner -> postAbsenceBannerNotification()
@@ -150,16 +151,27 @@ class ScreenTimeService : Service() {
     private fun startActiveTicker() {
         if (activeTicker?.isActive == true) return
         activeTicker = serviceScope.launch {
-            var lastTickMillis = SystemClock.elapsedRealtime()
+            var lastTickElapsedRealtime = SystemClock.elapsedRealtime()
             while (isActive) {
                 delay(TICK_INTERVAL_MILLIS)
-                val nowMillis = SystemClock.elapsedRealtime()
-                val elapsedSeconds = (nowMillis - lastTickMillis) / 1_000L
-                if (elapsedSeconds > 0L) {
-                    repository.addActiveSeconds(elapsedSeconds)
-                    lastTickMillis += elapsedSeconds * 1_000L
+                val nowElapsedRealtime = SystemClock.elapsedRealtime()
+                val rawElapsedSeconds = (nowElapsedRealtime - lastTickElapsedRealtime) / 1_000L
+                // Cap the tick gap: large gaps indicate doze/sleep/missed screen-off broadcast and
+                // should not be credited as active screen time. Also gate on isInteractive.
+                val creditableSeconds = if (isDeviceInteractive()) {
+                    rawElapsedSeconds.coerceAtMost(MAX_TICK_GAP_SECONDS)
+                } else {
+                    0L
+                }
+                if (creditableSeconds > 0L) {
+                    repository.addActiveSeconds(creditableSeconds)
                 } else {
                     repository.ensureCurrentDay()
+                }
+                // Advance the cursor by the full raw gap so we don't try to backfill the
+                // un-creditable seconds on the next tick.
+                if (rawElapsedSeconds > 0L) {
+                    lastTickElapsedRealtime += rawElapsedSeconds * 1_000L
                 }
                 refreshOverlay()
             }
@@ -169,6 +181,7 @@ class ScreenTimeService : Service() {
     private fun stopActiveTicker() {
         activeTicker?.cancel()
         activeTicker = null
+        repository.markActiveTickerStopped()
     }
 
     // --- Overlay -------------------------------------------------------------
@@ -195,20 +208,25 @@ class ScreenTimeService : Service() {
 
     // --- Notifications -------------------------------------------------------
 
-    private fun postTrackingNotification() {
+    private fun postTrackingNotification(asFullScreenIntent: Boolean = false) {
         val isAbsent = repository.snapshots.value.currentAbsenceStartedAtMillis > 0L
         val chronometerBaseMillis = System.currentTimeMillis() - repository.currentAbsenceElapsedMillis()
         startForeground(
             TrackingNotifications.ID_TRACKING,
-            TrackingNotifications.buildTracking(this, isAbsent, chronometerBaseMillis),
+            TrackingNotifications.buildTracking(
+                context = this,
+                isAbsent = isAbsent,
+                chronometerBaseMillis = chronometerBaseMillis,
+                fullScreenIntent = asFullScreenIntent,
+            ),
         )
     }
 
     private fun postAbsenceBannerNotification() {
-        val absenceSeconds = (repository.currentAbsenceElapsedMillis() / 1_000L).coerceAtLeast(0L)
+        val chronometerBaseMillis = System.currentTimeMillis() - repository.currentAbsenceElapsedMillis()
         startForeground(
             TrackingNotifications.ID_TRACKING,
-            TrackingNotifications.buildAbsenceBanner(this, absenceSeconds),
+            TrackingNotifications.buildAbsenceBanner(this, chronometerBaseMillis),
         )
     }
 
@@ -238,6 +256,7 @@ class ScreenTimeService : Service() {
         const val ACTION_REFRESH = "com.kan.app.action.REFRESH_TRACKING"
         const val ACTION_STOP = "com.kan.app.action.STOP_TRACKING"
         private const val TICK_INTERVAL_MILLIS = 1_000L
+        private const val MAX_TICK_GAP_SECONDS = 5L
 
         fun start(context: Context) {
             val intent = Intent(context, ScreenTimeService::class.java).setAction(ACTION_REFRESH)

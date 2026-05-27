@@ -165,7 +165,7 @@ private fun AwayPanel(currentAbsenceSeconds: Long, todayAwaySeconds: Long) {
     )
     Spacer(Modifier.height(6.dp))
     Text(
-        text = (todayAwaySeconds + currentAbsenceSeconds).toHumanDuration(),
+        text = todayAwaySeconds.toHumanDuration(),
         fontSize = 22.sp,
         fontWeight = FontWeight.Light,
         letterSpacing = (-0.4).sp,

@@ -282,54 +282,66 @@ private fun VisualizationLayer(
         .coerceIn(0f, 1f)
 
     when (visualization) {
-        LockScreenVisualization.Arc -> ArcGauge(progress = progress)
+        LockScreenVisualization.Arc -> ArcGauge(progress = progress, timerSeconds = timerSeconds)
         LockScreenVisualization.Pillar -> PillarGauge(progress = progress, timerSeconds = timerSeconds)
-        LockScreenVisualization.Constellation -> ConstellationGauge(progress = progress)
+        LockScreenVisualization.Constellation -> ConstellationGauge(progress = progress, timerSeconds = timerSeconds)
     }
 }
 
 @Composable
-private fun ArcGauge(progress: Float) {
+private fun ArcGauge(progress: Float, timerSeconds: Long) {
+    val safeSeconds = timerSeconds.coerceAtLeast(0L)
+    val minuteProgress = ((safeSeconds / 60L) % 60L) / 60f
+    val secondProgress = (safeSeconds % 60L) / 60f
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
         val cx = w / 2f
         val cy = h / 2f
-        val radius = w * 0.40f
-        val stroke = w * 0.018f
+        val baseRadius = w * 0.40f
+        val outerStroke = w * 0.018f
+        val middleStroke = w * 0.014f
+        val innerStroke = w * 0.010f
+        val bandGap = w * 0.020f
 
         val sweep = 260f
         val startAngle = 140f
-
-        drawArc(
-            color = KanColors.Hairline.copy(alpha = 0.7f),
-            startAngle = startAngle,
-            sweepAngle = sweep,
-            useCenter = false,
-            topLeft = Offset(cx - radius, cy - radius),
-            size = Size(radius * 2f, radius * 2f),
-            style = Stroke(width = stroke),
-        )
-
-        if (progress > 0f) {
+        fun drawBand(radius: Float, stroke: Float, bandProgress: Float, alpha: Float) {
             drawArc(
-                brush = Brush.sweepGradient(
-                    0.00f to KanColors.PrismRed.copy(alpha = 0.55f),
-                    0.20f to KanColors.PrismGold,
-                    0.45f to KanColors.PrismGreen,
-                    0.70f to KanColors.PrismBlue,
-                    0.95f to KanColors.PrismViolet.copy(alpha = 0.75f),
-                    1.00f to KanColors.PrismRed.copy(alpha = 0.55f),
-                    center = Offset(cx, cy),
-                ),
+                color = KanColors.Hairline.copy(alpha = alpha),
                 startAngle = startAngle,
-                sweepAngle = sweep * progress,
+                sweepAngle = sweep,
                 useCenter = false,
                 topLeft = Offset(cx - radius, cy - radius),
                 size = Size(radius * 2f, radius * 2f),
-                style = Stroke(width = stroke * 1.4f),
+                style = Stroke(width = stroke),
             )
+
+            if (bandProgress > 0f) {
+                drawArc(
+                    brush = Brush.sweepGradient(
+                        0.00f to KanColors.PrismRed.copy(alpha = 0.55f),
+                        0.20f to KanColors.PrismGold,
+                        0.45f to KanColors.PrismGreen,
+                        0.70f to KanColors.PrismBlue,
+                        0.95f to KanColors.PrismViolet.copy(alpha = 0.75f),
+                        1.00f to KanColors.PrismRed.copy(alpha = 0.55f),
+                        center = Offset(cx, cy),
+                    ),
+                    startAngle = startAngle,
+                    sweepAngle = sweep * bandProgress.coerceIn(0f, 1f),
+                    useCenter = false,
+                    topLeft = Offset(cx - radius, cy - radius),
+                    size = Size(radius * 2f, radius * 2f),
+                    style = Stroke(width = stroke * 1.2f),
+                )
+            }
         }
+
+        drawBand(baseRadius, outerStroke, progress, 0.70f)
+        drawBand(baseRadius - bandGap, middleStroke, minuteProgress, 0.58f)
+        drawBand(baseRadius - bandGap * 2, innerStroke, secondProgress, 0.48f)
     }
 }
 
@@ -394,34 +406,43 @@ private fun TickBar(progress: Float, width: androidx.compose.ui.unit.Dp, alpha: 
 }
 
 @Composable
-private fun ConstellationGauge(progress: Float) {
+private fun ConstellationGauge(progress: Float, timerSeconds: Long) {
+    val safeSeconds = timerSeconds.coerceAtLeast(0L)
+    val minuteProgress = ((safeSeconds / 60L) % 60L) / 60f
+    val secondProgress = (safeSeconds % 60L) / 60f
     val totalDots = 24
-    val lit = (progress.coerceIn(0f, 1f) * totalDots).toInt()
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
         val cx = w / 2f
         val cy = h / 2f
-        val radius = min(w, h) * 0.36f
-        val dotRadius = w * 0.012f
+        val outerRadius = min(w, h) * 0.36f
+        val middleRadius = outerRadius - (w * 0.05f)
+        val innerRadius = outerRadius - (w * 0.10f)
+        val outerDotRadius = w * 0.012f
+        val middleDotRadius = w * 0.010f
+        val innerDotRadius = w * 0.008f
 
-        repeat(totalDots) { index ->
-            val angle = (-Math.PI / 2.0) + (2.0 * Math.PI * index / totalDots)
-            val x = cx + radius * cos(angle).toFloat()
-            val y = cy + radius * sin(angle).toFloat()
+        fun drawRing(radius: Float, dotRadius: Float, litProgress: Float, dimAlpha: Float) {
+            val lit = (litProgress.coerceIn(0f, 1f) * totalDots).toInt()
+            repeat(totalDots) { index ->
+                val angle = (-Math.PI / 2.0) + (2.0 * Math.PI * index / totalDots)
+                val x = cx + radius * cos(angle).toFloat()
+                val y = cy + radius * sin(angle).toFloat()
 
-            val isLit = index < lit
-            drawCircle(
-                color = if (isLit) {
-                    prismHue(index, totalDots)
-                } else {
-                    KanColors.Hairline.copy(alpha = 0.7f)
-                },
-                radius = if (isLit) dotRadius * 1.4f else dotRadius,
-                center = Offset(x, y),
-            )
+                val isLit = index < lit
+                drawCircle(
+                    color = if (isLit) prismHue(index, totalDots) else KanColors.Hairline.copy(alpha = dimAlpha),
+                    radius = if (isLit) dotRadius * 1.35f else dotRadius,
+                    center = Offset(x, y),
+                )
+            }
         }
+
+        drawRing(outerRadius, outerDotRadius, progress, 0.70f)
+        drawRing(middleRadius, middleDotRadius, minuteProgress, 0.56f)
+        drawRing(innerRadius, innerDotRadius, secondProgress, 0.44f)
     }
 }
 

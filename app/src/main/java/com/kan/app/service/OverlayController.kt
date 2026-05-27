@@ -100,13 +100,23 @@ class OverlayController(
         }
         val label = labelView("SCREEN TIME")
         val time = timeView(13f)
-        val bar = HorizontalBarView(context)
+        val limitBar = HorizontalBarView(context)
+        val minuteBar = HorizontalBarView(context)
+        val secondBar = HorizontalBarView(context)
 
         container.addView(label)
         container.addView(time, LinearLayout.LayoutParams(LP_WRAP, LP_WRAP).apply { topMargin = dp(1) })
         container.addView(
-            bar,
+            limitBar,
             LinearLayout.LayoutParams(dp(78), dp(3)).apply { topMargin = dp(5) },
+        )
+        container.addView(
+            minuteBar,
+            LinearLayout.LayoutParams(dp(78), dp(2)).apply { topMargin = dp(3) },
+        )
+        container.addView(
+            secondBar,
+            LinearLayout.LayoutParams(dp(78), dp(2)).apply { topMargin = dp(2) },
         )
 
         val updater: (Payload) -> Unit = { p ->
@@ -114,7 +124,9 @@ class OverlayController(
             val color = colorForRatio(ratio)
             time.text = clockText(p)
             time.setTextColor(color)
-            bar.setProgress(ratio, color)
+            limitBar.setProgress(ratio, color)
+            minuteBar.setProgress(minutePulseProgress(p), color)
+            secondBar.setProgress(secondPulseProgress(p), color)
         }
         return container to updater
     }
@@ -126,13 +138,23 @@ class OverlayController(
         }
         val label = labelView("SCREEN TIME")
         val time = timeView(13f)
-        val dots = DotsRowView(context, dotCount = 6)
+        val limitDots = DotsRowView(context, dotCount = 6)
+        val minuteDots = DotsRowView(context, dotCount = 6)
+        val secondDots = DotsRowView(context, dotCount = 6)
 
         container.addView(label)
         container.addView(time, LinearLayout.LayoutParams(LP_WRAP, LP_WRAP).apply { topMargin = dp(1) })
         container.addView(
-            dots,
+            limitDots,
             LinearLayout.LayoutParams(LP_WRAP, dp(7)).apply { topMargin = dp(5) },
+        )
+        container.addView(
+            minuteDots,
+            LinearLayout.LayoutParams(LP_WRAP, dp(5)).apply { topMargin = dp(3) },
+        )
+        container.addView(
+            secondDots,
+            LinearLayout.LayoutParams(LP_WRAP, dp(5)).apply { topMargin = dp(2) },
         )
 
         val updater: (Payload) -> Unit = { p ->
@@ -140,7 +162,9 @@ class OverlayController(
             val color = colorForRatio(ratio)
             time.text = clockText(p)
             time.setTextColor(color)
-            dots.setProgress(ratio, color)
+            limitDots.setProgress(ratio, color)
+            minuteDots.setProgress(minutePulseProgress(p), color)
+            secondDots.setProgress(secondPulseProgress(p), color)
         }
         return container to updater
     }
@@ -169,7 +193,7 @@ class OverlayController(
             val color = colorForRatio(ratio)
             time.text = clockText(p)
             time.setTextColor(color)
-            ring.setProgress(ratio, color)
+            ring.setProgress(ratio, minutePulseProgress(p), secondPulseProgress(p), color)
         }
         return container to updater
     }
@@ -206,10 +230,12 @@ class OverlayController(
     private fun clockText(p: Payload): String {
         val hoursUsed = p.seconds / 3_600L
         val minutesUsed = (p.seconds % 3_600L) / 60L
+        val secondsUsed = p.seconds % 60L
         val budgetHours = p.budgetSeconds / 3_600L
         val budgetMinutes = (p.budgetSeconds % 3_600L) / 60L
-        val left = "%d:%02d".format(hoursUsed, minutesUsed)
-        val right = "%d:%02d".format(budgetHours, budgetMinutes)
+        val budgetDisplaySeconds = p.budgetSeconds % 60L
+        val left = "%d:%02d:%02d".format(hoursUsed, minutesUsed, secondsUsed)
+        val right = "%d:%02d:%02d".format(budgetHours, budgetMinutes, budgetDisplaySeconds)
         return "$left / $right"
     }
 
@@ -327,6 +353,10 @@ class OverlayController(
     private fun budgetRatio(p: Payload): Float =
         if (p.budgetSeconds <= 0L) 0f else (p.seconds.toFloat() / p.budgetSeconds.toFloat())
 
+    private fun minutePulseProgress(p: Payload): Float = ((p.seconds / 60L) % 60L).toFloat() / 60f
+
+    private fun secondPulseProgress(p: Payload): Float = (p.seconds % 60L).toFloat() / 60f
+
     private fun colorForRatio(ratio: Float): Int = when {
         ratio < 0.6f -> COLOR_OK
         ratio < 0.85f -> COLOR_WARN
@@ -422,7 +452,9 @@ class OverlayController(
     }
 
     private class RingView(context: Context) : View(context) {
-        private var progress: Float = 0f
+        private var limitProgress: Float = 0f
+        private var minuteProgress: Float = 0f
+        private var secondProgress: Float = 0f
         private var ringColor: Int = COLOR_OK
         private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -434,22 +466,43 @@ class OverlayController(
         }
         private val rect = RectF()
 
-        fun setProgress(value: Float, color: Int) {
-            progress = value.coerceAtLeast(0f)
+        fun setProgress(limitValue: Float, minuteValue: Float, secondValue: Float, color: Int) {
+            limitProgress = limitValue.coerceAtLeast(0f)
+            minuteProgress = minuteValue.coerceAtLeast(0f)
+            secondProgress = secondValue.coerceAtLeast(0f)
             ringColor = color
             invalidate()
         }
 
         override fun onDraw(canvas: Canvas) {
-            val stroke = height * 0.16f
-            trackPaint.strokeWidth = stroke
-            fillPaint.strokeWidth = stroke
-            val inset = stroke / 2f
+            val outerStroke = height * 0.14f
+            val middleStroke = height * 0.11f
+            val innerStroke = height * 0.08f
+
+            trackPaint.strokeWidth = outerStroke
+            fillPaint.strokeWidth = outerStroke
+            var inset = outerStroke / 2f
             rect.set(inset, inset, width - inset, height - inset)
             canvas.drawArc(rect, 0f, 360f, false, trackPaint)
             fillPaint.color = ringColor
-            val sweep = (min(progress, 1f) * 360f)
-            if (sweep > 0f) canvas.drawArc(rect, -90f, sweep, false, fillPaint)
+            val limitSweep = (min(limitProgress, 1f) * 360f)
+            if (limitSweep > 0f) canvas.drawArc(rect, -90f, limitSweep, false, fillPaint)
+
+            trackPaint.strokeWidth = middleStroke
+            fillPaint.strokeWidth = middleStroke
+            inset = outerStroke + middleStroke
+            rect.set(inset, inset, width - inset, height - inset)
+            canvas.drawArc(rect, 0f, 360f, false, trackPaint)
+            val minuteSweep = (min(minuteProgress, 1f) * 360f)
+            if (minuteSweep > 0f) canvas.drawArc(rect, -90f, minuteSweep, false, fillPaint)
+
+            trackPaint.strokeWidth = innerStroke
+            fillPaint.strokeWidth = innerStroke
+            inset = outerStroke + middleStroke + innerStroke
+            rect.set(inset, inset, width - inset, height - inset)
+            canvas.drawArc(rect, 0f, 360f, false, trackPaint)
+            val secondSweep = (min(secondProgress, 1f) * 360f)
+            if (secondSweep > 0f) canvas.drawArc(rect, -90f, secondSweep, false, fillPaint)
         }
     }
 }

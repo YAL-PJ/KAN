@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.kan.app.R
 import com.kan.app.domain.toClockTime
+import com.kan.app.ui.LockTimerActivity
 import com.kan.app.ui.MainActivity
 
 /**
@@ -30,6 +31,7 @@ internal object TrackingNotifications {
     private const val REQUEST_CODE_LAUNCH = 0
     private const val REQUEST_CODE_OVERLAY_SETTINGS = 1
     private const val REQUEST_CODE_BANNER_LAUNCH = 2
+    private const val REQUEST_CODE_FULL_SCREEN = 3
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -49,44 +51,54 @@ internal object TrackingNotifications {
         context: Context,
         isAbsent: Boolean,
         chronometerBaseMillis: Long,
-    ): Notification = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_kan_notification)
-        .setContentTitle(if (isAbsent) "Time away" else "I IN is watching")
-        .setContentText(
-            if (isAbsent) {
-                "Phone is down. The timer is growing."
-            } else {
-                "Tracking phone time and time away."
-            },
-        )
-        .setContentIntent(launchIntent(context, REQUEST_CODE_LAUNCH))
-        .setOngoing(true)
-        .setWhen(chronometerBaseMillis)
-        .setShowWhen(isAbsent)
-        .setUsesChronometer(isAbsent)
-        .setChronometerCountDown(false)
-        .setSilent(true)
-        .setOnlyAlertOnce(true)
-        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-        .setCategory(NotificationCompat.CATEGORY_STATUS)
-        .setPriority(
-            if (isAbsent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_LOW,
-        )
-        .addAction(0, "Overlay permission", overlaySettingsIntent(context))
-        .build()
+        fullScreenIntent: Boolean = false,
+    ): Notification {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_kan_notification)
+            .setContentTitle(if (isAbsent) "Time away" else "I IN is watching")
+            .setContentText(
+                if (isAbsent) {
+                    "Phone is down. The timer is growing."
+                } else {
+                    "Tracking phone time and time away."
+                },
+            )
+            .setContentIntent(launchIntent(context, REQUEST_CODE_LAUNCH))
+            .setOngoing(true)
+            .setWhen(chronometerBaseMillis)
+            .setShowWhen(isAbsent)
+            .setUsesChronometer(isAbsent)
+            .setChronometerCountDown(false)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(
+                if (isAbsent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_LOW,
+            )
+            .addAction(0, "Overlay permission", overlaySettingsIntent(context))
+        if (fullScreenIntent && isAbsent) {
+            builder.setFullScreenIntent(lockTimerFullScreenIntent(context), true)
+        }
+        return builder.build()
+    }
 
-    fun buildAbsenceBanner(context: Context, absenceSeconds: Long): Notification =
+    fun buildAbsenceBanner(context: Context, chronometerBaseMillis: Long): Notification =
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_kan_notification)
-            .setContentTitle("Time Away: ${absenceSeconds.toClockTime()}")
+            .setContentTitle("Time Away")
             .setContentText("Heads-up mode test while locked.")
             .setContentIntent(launchIntent(context, REQUEST_CODE_BANNER_LAUNCH))
-            .setWhen(System.currentTimeMillis())
+            .setOngoing(true)
+            .setWhen(chronometerBaseMillis)
             .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setChronometerCountDown(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOnlyAlertOnce(false)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
             .setAutoCancel(false)
             .build()
 
@@ -112,6 +124,13 @@ internal object TrackingNotifications {
         context,
         requestCode,
         Intent(context, MainActivity::class.java),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    private fun lockTimerFullScreenIntent(context: Context): PendingIntent = PendingIntent.getActivity(
+        context,
+        REQUEST_CODE_FULL_SCREEN,
+        LockTimerActivity.createIntent(context),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 

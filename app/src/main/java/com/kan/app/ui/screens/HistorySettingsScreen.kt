@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ private val WeekdayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("E
 fun HistorySettingsScreen(
     snapshot: KanSnapshot,
     onBudgetHoursChanged: (Float) -> Unit,
+    onOverlayEnabledChanged: (Boolean) -> Unit,
 ) {
     val budgetHours = snapshot.dailyBudgetSeconds / SECONDS_PER_HOUR
     GuardingScaffold {
@@ -56,6 +58,13 @@ fun HistorySettingsScreen(
                 onBudgetHoursChanged = onBudgetHoursChanged,
             )
         }
+        Spacer(Modifier.height(20.dp))
+        FloatingPanel {
+            OverlayToggleRow(
+                enabled = snapshot.overlayEnabled,
+                onEnabledChanged = onOverlayEnabledChanged,
+            )
+        }
 
         Spacer(Modifier.height(28.dp))
         Text(
@@ -66,6 +75,28 @@ fun HistorySettingsScreen(
             color = KanColors.TextMuted,
             modifier = Modifier.padding(start = 4.dp),
         )
+    }
+}
+
+@Composable
+private fun OverlayToggleRow(
+    enabled: Boolean,
+    onEnabledChanged: (Boolean) -> Unit,
+) {
+    SectionLabel("FLOATING TIMER")
+    Spacer(Modifier.height(16.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = if (enabled) "Always visible" else "Hidden",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Light,
+            color = KanColors.TextSecondary,
+        )
+        Switch(checked = enabled, onCheckedChange = onEnabledChanged)
     }
 }
 

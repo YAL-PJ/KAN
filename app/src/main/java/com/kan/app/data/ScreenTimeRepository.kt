@@ -281,6 +281,10 @@ class ScreenTimeRepository private constructor(context: Context) {
         prefs.edit().putInt(KEY_OVERLAY_STYLE, style.storageValue).applyAndPublish()
     }
 
+    fun updateOverlayEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_OVERLAY_ENABLED, enabled).applyAndPublish()
+    }
+
     fun isOnboardingCompleted(): Boolean = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
 
     fun markOnboardingCompleted() {
@@ -354,6 +358,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             dailyBudgetStreak = prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0),
             lockTimerMode = LockTimerMode.fromStorageValue(prefs.getInt(KEY_LOCK_TIMER_MODE, 0)),
             overlayStyle = OverlayStyle.fromStorageValue(prefs.getInt(KEY_OVERLAY_STYLE, 0)),
+            overlayEnabled = prefs.getBoolean(KEY_OVERLAY_ENABLED, true),
             lockScreenVisualization = LockScreenVisualization.fromStorageValue(
                 prefs.getInt(KEY_LOCK_SCREEN_VISUALIZATION, 0),
             ),
@@ -397,6 +402,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_HISTORY = "history"
         private const val KEY_LOCK_TIMER_MODE = "lock_timer_mode"
         private const val KEY_OVERLAY_STYLE = "overlay_style"
+        private const val KEY_OVERLAY_ENABLED = "overlay_enabled"
         private const val KEY_LOCK_SCREEN_VISUALIZATION = "lock_screen_visualization"
         private const val KEY_DAILY_ABSENCE_SECONDS = "daily_absence_seconds"
         private const val KEY_CHALLENGE_END_AT = "challenge_end_at"

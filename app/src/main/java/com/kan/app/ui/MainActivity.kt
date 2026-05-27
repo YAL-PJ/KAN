@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
                     onRequestNotificationPermission = ::requestNotificationPermission,
                     onFinishOnboarding = ::finishOnboarding,
                     onBudgetHoursChanged = repository::updateDailyBudgetHours,
+                    onOverlayEnabledChanged = repository::updateOverlayEnabled,
                     onLockTimerModeChanged = repository::updateLockTimerMode,
                     onOverlayStyleChanged = repository::updateOverlayStyle,
                     onLockScreenVisualizationChanged = repository::updateLockScreenVisualization,

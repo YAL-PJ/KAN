@@ -13,8 +13,8 @@ import android.os.SystemClock
 import android.view.WindowManager
 import androidx.core.content.ContextCompat
 import com.kan.app.core.LockTimerMode
+import com.kan.app.data.KanSnapshot
 import com.kan.app.data.ScreenTimeRepository
-import com.kan.app.domain.toClockTime
 import com.kan.app.ui.LockTimerActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +22,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -61,7 +64,18 @@ class ScreenTimeService : Service() {
         TrackingNotifications.createChannel(this)
         registerScreenReceiver()
         postTrackingNotification()
+        observeStyleChanges()
         syncCurrentDeviceState()
+    }
+
+    private fun observeStyleChanges() {
+        serviceScope.launch {
+            repository.snapshots
+                .map { it.overlayStyle }
+                .distinctUntilChanged()
+                .onEach { refreshOverlay() }
+                .collect {}
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -162,15 +176,22 @@ class ScreenTimeService : Service() {
     private fun showOverlay() {
         val snapshot = repository.snapshots.value
         overlay.show(
-            initialText = snapshot.dailyScreenSeconds.toClockTime(),
+            payload = snapshot.toOverlayPayload(),
             initialX = snapshot.overlayX,
             initialY = snapshot.overlayY,
         )
     }
 
     private fun refreshOverlay() {
-        overlay.updateText(repository.snapshots.value.dailyScreenSeconds.toClockTime())
+        overlay.update(repository.snapshots.value.toOverlayPayload())
     }
+
+    private fun KanSnapshot.toOverlayPayload(): OverlayController.Payload =
+        OverlayController.Payload(
+            seconds = dailyScreenSeconds,
+            budgetSeconds = dailyBudgetSeconds,
+            style = overlayStyle,
+        )
 
     // --- Notifications -------------------------------------------------------
 

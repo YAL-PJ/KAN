@@ -3,6 +3,7 @@ package com.kan.app.data
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
+import com.kan.app.core.LockScreenVisualization
 import com.kan.app.core.LockTimerMode
 import com.kan.app.core.OverlayStyle
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +66,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         val elapsedSeconds = (currentAbsenceElapsedMillis(nowMillis, elapsedRealtimeMillis) / 1_000L)
             .coerceAtLeast(0L)
         val dailyPeak = maxOf(prefs.getLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L), elapsedSeconds)
+        val dailyTotal = prefs.getLong(KEY_DAILY_ABSENCE_SECONDS, 0L) + elapsedSeconds
         val currentBest = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L)
         val brokeRecord = elapsedSeconds > currentBest
 
@@ -73,10 +75,32 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, 0L)
             .putLong(KEY_LAST_ABSENCE_SECONDS, elapsedSeconds)
             .putLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, dailyPeak)
+            .putLong(KEY_DAILY_ABSENCE_SECONDS, dailyTotal)
             .putLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, maxOf(currentBest, elapsedSeconds))
+            .putLong(KEY_CHALLENGE_END_AT, 0L)
+            .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
             .applyAndPublish()
 
         return brokeRecord
+    }
+
+    fun startChallenge(durationSeconds: Long, nowMillis: Long = System.currentTimeMillis()) {
+        val safe = durationSeconds.coerceAtLeast(1L)
+        prefs.edit()
+            .putLong(KEY_CHALLENGE_END_AT, nowMillis + safe * 1_000L)
+            .putLong(KEY_CHALLENGE_DURATION_SECONDS, safe)
+            .applyAndPublish()
+    }
+
+    fun cancelChallenge() {
+        prefs.edit()
+            .putLong(KEY_CHALLENGE_END_AT, 0L)
+            .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
+            .applyAndPublish()
+    }
+
+    fun updateLockScreenVisualization(visualization: LockScreenVisualization) {
+        prefs.edit().putInt(KEY_LOCK_SCREEN_VISUALIZATION, visualization.storageValue).applyAndPublish()
     }
 
     fun currentAbsenceElapsedMillis(
@@ -150,8 +174,11 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putString(KEY_CURRENT_DATE, today.toString())
             .putLong(KEY_DAILY_SCREEN_SECONDS, 0L)
             .putLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L)
+            .putLong(KEY_DAILY_ABSENCE_SECONDS, 0L)
             .putLong(KEY_ABSENCE_STARTED_AT, 0L)
             .putLong(KEY_ABSENCE_STARTED_AT_ELAPSED_REALTIME, 0L)
+            .putLong(KEY_CHALLENGE_END_AT, 0L)
+            .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
             .putInt(KEY_DAILY_BUDGET_STREAK, nextStreak)
             .putString(KEY_HISTORY, HistorySerializer.encode(updatedHistory, HISTORY_LIMIT))
             .applyAndPublish()
@@ -166,9 +193,15 @@ class ScreenTimeRepository private constructor(context: Context) {
             dailyBudgetStreak = prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0),
             lockTimerMode = LockTimerMode.fromStorageValue(prefs.getInt(KEY_LOCK_TIMER_MODE, 0)),
             overlayStyle = OverlayStyle.fromStorageValue(prefs.getInt(KEY_OVERLAY_STYLE, 0)),
+            lockScreenVisualization = LockScreenVisualization.fromStorageValue(
+                prefs.getInt(KEY_LOCK_SCREEN_VISUALIZATION, 0),
+            ),
             currentAbsenceStartedAtMillis = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L),
             lastAbsenceSeconds = prefs.getLong(KEY_LAST_ABSENCE_SECONDS, 0L),
             allTimeAbsenceRecordSeconds = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L),
+            dailyAbsenceSeconds = prefs.getLong(KEY_DAILY_ABSENCE_SECONDS, 0L),
+            challengeEndAtMillis = prefs.getLong(KEY_CHALLENGE_END_AT, 0L),
+            challengeDurationSeconds = prefs.getLong(KEY_CHALLENGE_DURATION_SECONDS, 0L),
             overlayX = prefs.getInt(KEY_OVERLAY_X, DEFAULT_OVERLAY_X),
             overlayY = prefs.getInt(KEY_OVERLAY_Y, DEFAULT_OVERLAY_Y),
             history = readHistory(),
@@ -200,6 +233,10 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_HISTORY = "history"
         private const val KEY_LOCK_TIMER_MODE = "lock_timer_mode"
         private const val KEY_OVERLAY_STYLE = "overlay_style"
+        private const val KEY_LOCK_SCREEN_VISUALIZATION = "lock_screen_visualization"
+        private const val KEY_DAILY_ABSENCE_SECONDS = "daily_absence_seconds"
+        private const val KEY_CHALLENGE_END_AT = "challenge_end_at"
+        private const val KEY_CHALLENGE_DURATION_SECONDS = "challenge_duration_seconds"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 
         private const val SECONDS_PER_HOUR = 3_600f

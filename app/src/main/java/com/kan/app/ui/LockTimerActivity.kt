@@ -43,10 +43,11 @@ class LockTimerActivity : ComponentActivity() {
         setContent {
             val snapshot by repository.snapshots.collectAsStateWithLifecycle()
             val startedAtMillis = snapshot.currentAbsenceStartedAtMillis
+            val challengeEndAtMillis = snapshot.challengeEndAtMillis
             var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-            LaunchedEffect(startedAtMillis) {
-                while (startedAtMillis > 0L) {
+            LaunchedEffect(startedAtMillis, challengeEndAtMillis) {
+                while (startedAtMillis > 0L || challengeEndAtMillis > 0L) {
                     nowMillis = System.currentTimeMillis()
                     delay(1_000L)
                 }
@@ -56,13 +57,28 @@ class LockTimerActivity : ComponentActivity() {
                 if (startedAtMillis <= 0L) finish()
             }
 
+            val currentAbsenceSeconds = if (startedAtMillis > 0L) {
+                ((nowMillis - startedAtMillis) / 1_000L).coerceAtLeast(0L)
+            } else {
+                0L
+            }
+            val challengeRemainingSeconds = if (challengeEndAtMillis > 0L) {
+                ((challengeEndAtMillis - nowMillis) / 1_000L).coerceAtLeast(0L)
+            } else {
+                0L
+            }
+
             KanTheme {
                 LockTimerScreen(
-                    elapsedSeconds = if (startedAtMillis > 0L) {
-                        ((nowMillis - startedAtMillis) / 1_000L).coerceAtLeast(0L)
-                    } else {
-                        0L
+                    currentAbsenceSeconds = currentAbsenceSeconds,
+                    todayAwaySeconds = snapshot.dailyAbsenceSeconds,
+                    visualization = snapshot.lockScreenVisualization,
+                    challengeRemainingSeconds = challengeRemainingSeconds,
+                    challengeDurationSeconds = snapshot.challengeDurationSeconds,
+                    onStartChallenge = { minutes ->
+                        repository.startChallenge(minutes * 60L)
                     },
+                    onCancelChallenge = repository::cancelChallenge,
                 )
             }
         }

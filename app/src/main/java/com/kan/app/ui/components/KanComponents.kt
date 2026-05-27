@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -23,8 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,37 +37,38 @@ import androidx.compose.ui.unit.sp
 import com.kan.app.ui.theme.KanColors
 
 /**
- * Full-screen container that frames everything inside a brushed-steel "guarding circle".
- * The ring is drawn behind the content with depth shadows and a faint outer orbit arc;
- * content floats above, scrolls vertically, and never crosses the ring's optical guard rails.
+ * Full-screen container where everything lives inside the guarding circle.
+ * The ring sits in the foreground; content scrolls through the circular viewport behind it.
  */
 @Composable
 fun GuardingScaffold(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(KanColors.Void),
     ) {
-        GuardingRing(modifier = Modifier.fillMaxSize())
+        val ringRadius = minOf(maxWidth, maxHeight) * 0.46f
+        val verticalPadding = (maxHeight - ringRadius * 2f) / 2f + 20.dp
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 38.dp, vertical = 64.dp),
+                .padding(horizontal = 28.dp, vertical = verticalPadding),
             content = content,
         )
+
+        GuardingRing(modifier = Modifier.fillMaxSize())
     }
 }
 
 /**
- * Draws the brushed-steel guarding circle that wraps the screen, plus a faint outer
- * orbit and a soft inner shadow. The ring is slightly wider than the screen so the
- * top and bottom curves fall off-edge — the viewer reads it as the screen sitting
- * inside the protective circle, with the left and right curves visible as guard rails.
+ * Draws the guarding circle in the foreground. A void mask covers everything outside
+ * the ring so content only shows through the circular interior. The ring itself is
+ * brushed steel rendered on top, giving the effect of content living inside a protected circle.
  */
 @Composable
 fun GuardingRing(modifier: Modifier = Modifier) {
@@ -71,24 +77,26 @@ fun GuardingRing(modifier: Modifier = Modifier) {
         val h = size.height
         val cx = w / 2f
         val cy = h / 2f
-        val radius = w * 0.56f
-        val stroke = w * 0.022f
+        val radius = minOf(w, h) * 0.46f
+        val stroke = minOf(w, h) * 0.022f
 
-        // Faint outer orbit — depth, "atmosphere" beyond the guard
-        drawCircle(
-            color = KanColors.Hairline.copy(alpha = 0.55f),
-            radius = radius + stroke * 3.2f,
-            center = Offset(cx, cy),
-            style = Stroke(width = 0.6.dp.toPx()),
-        )
-        drawCircle(
-            color = KanColors.Hairline.copy(alpha = 0.18f),
-            radius = radius + stroke * 5.4f,
-            center = Offset(cx + w * 0.18f, cy + h * 0.04f),
-            style = Stroke(width = 0.5.dp.toPx()),
-        )
+        // Void mask — paint everything outside the ring with the background color
+        // so content is only visible through the circular interior
+        val maskPath = Path().apply {
+            fillType = PathFillType.EvenOdd
+            addRect(Rect(0f, 0f, w, h))
+            addOval(
+                Rect(
+                    left = cx - radius - stroke * 0.5f,
+                    top = cy - radius - stroke * 0.5f,
+                    right = cx + radius + stroke * 0.5f,
+                    bottom = cy + radius + stroke * 0.5f,
+                )
+            )
+        }
+        drawPath(maskPath, color = KanColors.Void)
 
-        // Soft drop shadow under the ring
+        // Soft shadow halo at the ring edge — depth where metal meets void
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -124,7 +132,7 @@ fun GuardingRing(modifier: Modifier = Modifier) {
             style = Stroke(width = stroke),
         )
 
-        // Inner edge highlight — gives the metal its bevel
+        // Inner edge highlight — bevel on the inside face of the ring
         drawCircle(
             color = KanColors.SteelHighlight.copy(alpha = 0.32f),
             radius = radius - stroke * 0.5f,
@@ -132,17 +140,31 @@ fun GuardingRing(modifier: Modifier = Modifier) {
             style = Stroke(width = 0.5.dp.toPx()),
         )
 
-        // Inner core fade — pools depth toward the focal area
+        // Inner orbit arcs — faint depth layers inside the guarded space
+        drawCircle(
+            color = KanColors.Hairline.copy(alpha = 0.45f),
+            radius = radius - stroke * 3.0f,
+            center = Offset(cx, cy),
+            style = Stroke(width = 0.6.dp.toPx()),
+        )
+        drawCircle(
+            color = KanColors.Hairline.copy(alpha = 0.15f),
+            radius = radius - stroke * 5.5f,
+            center = Offset(cx, cy),
+            style = Stroke(width = 0.5.dp.toPx()),
+        )
+
+        // Edge vignette — subtle darkening near the ring wall gives the interior depth
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    KanColors.VoidGlass.copy(alpha = 0.55f),
                     Color.Transparent,
+                    KanColors.Void.copy(alpha = 0.38f),
                 ),
                 center = Offset(cx, cy),
-                radius = radius * 0.85f,
+                radius = radius - stroke,
             ),
-            radius = radius * 0.85f,
+            radius = radius - stroke,
             center = Offset(cx, cy),
         )
     }

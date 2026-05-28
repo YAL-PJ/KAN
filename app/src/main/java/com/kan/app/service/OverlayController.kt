@@ -46,6 +46,8 @@ class OverlayController(
     private var currentStyle: OverlayStyle? = null
     private var applyPayload: ((Payload) -> Unit)? = null
 
+    fun isShowing(): Boolean = root != null
+
     fun show(payload: Payload, initialX: Int, initialY: Int) {
         if (!Settings.canDrawOverlays(context)) return
         if (root != null) {

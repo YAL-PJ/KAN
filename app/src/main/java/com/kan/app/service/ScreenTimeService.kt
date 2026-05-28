@@ -203,7 +203,13 @@ class ScreenTimeService : Service() {
             overlay.remove()
             return
         }
-        overlay.update(snapshot.toOverlayPayload())
+        if (overlay.isShowing()) {
+            overlay.update(snapshot.toOverlayPayload())
+            return
+        }
+        if (isDeviceInteractive() && !isKeyguardLocked()) {
+            showOverlay()
+        }
     }
 
     private fun KanSnapshot.toOverlayPayload(): OverlayController.Payload =

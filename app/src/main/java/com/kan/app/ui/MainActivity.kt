@@ -45,9 +45,7 @@ class MainActivity : ComponentActivity() {
                     onFinishOnboarding = ::finishOnboarding,
                     onBudgetHoursChanged = repository::updateDailyBudgetHours,
                     onOverlayEnabledChanged = repository::updateOverlayEnabled,
-                    onLockTimerModeChanged = repository::updateLockTimerMode,
-                    onOverlayStyleChanged = repository::updateOverlayStyle,
-                    onLockScreenVisualizationChanged = repository::updateLockScreenVisualization,
+                    onLockScreenTimerEnabledChanged = repository::updateLockScreenTimerEnabled,
                     buildStamp = buildStamp(),
                 )
             }

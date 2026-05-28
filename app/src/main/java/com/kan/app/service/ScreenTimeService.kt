@@ -12,7 +12,6 @@ import android.os.PowerManager
 import android.os.SystemClock
 import android.view.WindowManager
 import androidx.core.content.ContextCompat
-import com.kan.app.core.LockTimerMode
 import com.kan.app.data.KanSnapshot
 import com.kan.app.data.ScreenTimeRepository
 import com.kan.app.ui.LockTimerActivity
@@ -132,13 +131,11 @@ class ScreenTimeService : Service() {
         stopActiveTicker()
         overlay.remove()
         repository.ensureAbsenceStarted()
-        when (repository.snapshots.value.lockTimerMode) {
-            LockTimerMode.FullScreen -> {
-                postTrackingNotification(asFullScreenIntent = true)
-                launchLockScreenTimer()
-            }
-            LockTimerMode.Banner -> postAbsenceBannerNotification()
-            LockTimerMode.Chronometer -> postTrackingNotification()
+        if (repository.snapshots.value.lockScreenTimerEnabled) {
+            postTrackingNotification(asFullScreenIntent = true)
+            launchLockScreenTimer()
+        } else {
+            postTrackingNotification()
         }
     }
 

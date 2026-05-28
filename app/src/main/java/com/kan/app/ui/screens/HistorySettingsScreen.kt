@@ -37,6 +37,7 @@ fun HistorySettingsScreen(
     snapshot: KanSnapshot,
     onBudgetHoursChanged: (Float) -> Unit,
     onOverlayEnabledChanged: (Boolean) -> Unit,
+    onLockScreenTimerEnabledChanged: (Boolean) -> Unit,
 ) {
     val budgetHours = snapshot.dailyBudgetSeconds / SECONDS_PER_HOUR
     GuardingScaffold {
@@ -65,6 +66,13 @@ fun HistorySettingsScreen(
                 onEnabledChanged = onOverlayEnabledChanged,
             )
         }
+        Spacer(Modifier.height(20.dp))
+        FloatingPanel {
+            LockScreenTimerToggleRow(
+                enabled = snapshot.lockScreenTimerEnabled,
+                onEnabledChanged = onLockScreenTimerEnabledChanged,
+            )
+        }
 
         Spacer(Modifier.height(28.dp))
         Text(
@@ -75,6 +83,28 @@ fun HistorySettingsScreen(
             color = KanColors.TextMuted,
             modifier = Modifier.padding(start = 4.dp),
         )
+    }
+}
+
+@Composable
+private fun LockScreenTimerToggleRow(
+    enabled: Boolean,
+    onEnabledChanged: (Boolean) -> Unit,
+) {
+    SectionLabel("LOCK-SCREEN TIMER")
+    Spacer(Modifier.height(16.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = if (enabled) "Full-screen before unlock" else "Notification fallback only",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Light,
+            color = KanColors.TextSecondary,
+        )
+        Switch(checked = enabled, onCheckedChange = onEnabledChanged)
     }
 }
 

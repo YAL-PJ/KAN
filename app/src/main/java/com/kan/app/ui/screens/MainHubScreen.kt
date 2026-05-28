@@ -1,25 +1,16 @@
 package com.kan.app.ui.screens
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kan.app.core.LockScreenVisualization
-import com.kan.app.core.LockTimerMode
-import com.kan.app.core.OverlayStyle
 import com.kan.app.data.KanSnapshot
 import com.kan.app.domain.toClockTime
 import com.kan.app.domain.toHumanDuration
@@ -34,9 +25,6 @@ fun MainHubScreen(
     snapshot: KanSnapshot,
     hasOverlayPermission: Boolean,
     onRequestOverlayPermission: () -> Unit,
-    onLockTimerModeChanged: (LockTimerMode) -> Unit,
-    onOverlayStyleChanged: (OverlayStyle) -> Unit,
-    onLockScreenVisualizationChanged: (LockScreenVisualization) -> Unit,
     buildStamp: String,
 ) {
     GuardingScaffold {
@@ -56,34 +44,20 @@ fun MainHubScreen(
         Spacer(Modifier.height(20.dp))
 
         FloatingPanel {
-            OverlayStyleSelector(
-                selectedStyle = snapshot.overlayStyle,
-                onStyleSelected = onOverlayStyleChanged,
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        FloatingPanel {
             CeremonialMetric(
                 label = "TIME AWAY",
                 primary = snapshot.allTimeAbsenceRecordSeconds.toHumanDuration(),
                 secondary = "record",
-                support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()} away; mode below controls lock-screen behavior",
+                support = "Last ${snapshot.lastAbsenceSeconds.toHumanDuration()} away; lock timer is full-screen with notification fallback",
             )
-            Spacer(Modifier.height(24.dp))
-            LockTimerModeSelector(
-                selectedMode = snapshot.lockTimerMode,
-                onModeSelected = onLockTimerModeChanged,
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        FloatingPanel {
-            LockScreenVisualizationSelector(
-                selectedVisualization = snapshot.lockScreenVisualization,
-                onVisualizationSelected = onLockScreenVisualizationChanged,
+            Spacer(Modifier.height(20.dp))
+            SectionLabel("VISUAL STYLE")
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "Bars across floating, lock-screen, and challenge timers.",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Light,
+                color = KanColors.TextSecondary,
             )
         }
 
@@ -138,65 +112,9 @@ private fun Header() {
 }
 
 @Composable
-private fun LockTimerModeSelector(
-    selectedMode: LockTimerMode,
-    onModeSelected: (LockTimerMode) -> Unit,
-) {
-    SectionLabel("LOCK-SCREEN TIMER MODE")
-    Spacer(Modifier.height(12.dp))
-    LockTimerModeOptions.forEach { option ->
-        LockTimerModeOption(
-            title = option.title,
-            subtitle = option.subtitle,
-            selected = selectedMode == option.mode,
-            onSelect = { onModeSelected(option.mode) },
-        )
-    }
-}
-
-@Composable
-private fun LockTimerModeOption(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(
-            selected = selected,
-            onClick = onSelect,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = KanColors.Steel,
-                unselectedColor = KanColors.TextTertiary,
-            ),
-        )
-        Column(modifier = Modifier.padding(start = 8.dp)) {
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = KanColors.TextPrimary,
-            )
-            Text(
-                text = subtitle,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Light,
-                color = KanColors.TextSecondary,
-            )
-        }
-    }
-}
-
-@Composable
 private fun OverlayPermissionButton(onClick: () -> Unit) {
     TextButton(
         onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 6.dp),
     ) {
         Text(
             text = "GRANT FLOATING TIMER ACCESS",
@@ -207,109 +125,3 @@ private fun OverlayPermissionButton(onClick: () -> Unit) {
         )
     }
 }
-
-@Composable
-private fun LockScreenVisualizationSelector(
-    selectedVisualization: LockScreenVisualization,
-    onVisualizationSelected: (LockScreenVisualization) -> Unit,
-) {
-    SectionLabel("LOCK-SCREEN ACHIEVEMENT VISUAL")
-    Spacer(Modifier.height(12.dp))
-    LockScreenVisualizationOptions.forEach { option ->
-        LockTimerModeOption(
-            title = option.title,
-            subtitle = option.subtitle,
-            selected = selectedVisualization == option.visualization,
-            onSelect = { onVisualizationSelected(option.visualization) },
-        )
-    }
-}
-
-private data class LockScreenVisualizationOptionSpec(
-    val visualization: LockScreenVisualization,
-    val title: String,
-    val subtitle: String,
-)
-
-private val LockScreenVisualizationOptions = listOf(
-    LockScreenVisualizationOptionSpec(
-        visualization = LockScreenVisualization.Arc,
-        title = "Option A: Arc gauge",
-        subtitle = "Curved prismatic arc fills as your away-time grows toward a day.",
-    ),
-    LockScreenVisualizationOptionSpec(
-        visualization = LockScreenVisualization.Pillar,
-        title = "Option B: Prism pillar",
-        subtitle = "Three prism bars track day progress, minutes, and live seconds.",
-    ),
-    LockScreenVisualizationOptionSpec(
-        visualization = LockScreenVisualization.Constellation,
-        title = "Option C: Constellation",
-        subtitle = "Twenty-four dots ring the screen, lighting hour by hour.",
-    ),
-)
-
-@Composable
-private fun OverlayStyleSelector(
-    selectedStyle: OverlayStyle,
-    onStyleSelected: (OverlayStyle) -> Unit,
-) {
-    SectionLabel("FLOATING TIMER STYLE")
-    Spacer(Modifier.height(12.dp))
-    OverlayStyleOptions.forEach { option ->
-        LockTimerModeOption(
-            title = option.title,
-            subtitle = option.subtitle,
-            selected = selectedStyle == option.style,
-            onSelect = { onStyleSelected(option.style) },
-        )
-    }
-}
-
-private data class OverlayStyleOptionSpec(
-    val style: OverlayStyle,
-    val title: String,
-    val subtitle: String,
-)
-
-private val OverlayStyleOptions = listOf(
-    OverlayStyleOptionSpec(
-        style = OverlayStyle.Bar,
-        title = "Option A: Progress bar",
-        subtitle = "Used / budget time with a thin filling bar underneath.",
-    ),
-    OverlayStyleOptionSpec(
-        style = OverlayStyle.Dots,
-        title = "Option B: Dot row",
-        subtitle = "Time plus six dots that fill as you approach your limit.",
-    ),
-    OverlayStyleOptionSpec(
-        style = OverlayStyle.Ring,
-        title = "Option C: Progress ring",
-        subtitle = "Time alongside a small ring that sweeps toward the limit.",
-    ),
-)
-
-private data class LockTimerModeOptionSpec(
-    val mode: LockTimerMode,
-    val title: String,
-    val subtitle: String,
-)
-
-private val LockTimerModeOptions = listOf(
-    LockTimerModeOptionSpec(
-        mode = LockTimerMode.Chronometer,
-        title = "Option A: Passive chronometer",
-        subtitle = "Standard low-priority ongoing notification timer.",
-    ),
-    LockTimerModeOptionSpec(
-        mode = LockTimerMode.FullScreen,
-        title = "Option B: Full-screen takeover",
-        subtitle = "Launches a large lock-screen timer activity.",
-    ),
-    LockTimerModeOptionSpec(
-        mode = LockTimerMode.Banner,
-        title = "Option C: Heads-up banner",
-        subtitle = "Triggers a high-priority banner with live time-away value.",
-    ),
-)

@@ -87,18 +87,18 @@ fun LockTimerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
-                    .padding(horizontal = 36.dp),
+                    .padding(horizontal = 44.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = "I  IN",
-                    fontSize = 13.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Light,
                     letterSpacing = 6.sp,
                     color = KanColors.TextTertiary,
                 )
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(8.dp))
 
                 if (challengeActive) {
                     ChallengePanel(
@@ -112,11 +112,11 @@ fun LockTimerScreen(
                         currentAbsenceSeconds = currentAbsenceSeconds,
                         todayAwaySeconds = todayAwaySeconds,
                     )
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(10.dp))
                     ChallengeStarter(onStart = onStartChallenge)
                 }
 
-                Spacer(Modifier.height(22.dp))
+                Spacer(Modifier.height(16.dp))
                 Text(
                     text = if (challengeActive) {
                         if (challengeFinished) {
@@ -128,12 +128,12 @@ fun LockTimerScreen(
                         "Top number: time since you locked the screen.\n" +
                             "Below: total time away today, resets at midnight."
                     },
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Light,
                     letterSpacing = 0.4.sp,
                     color = KanColors.TextSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 16.sp,
+                    lineHeight = 14.sp,
                 )
             }
         }
@@ -144,34 +144,34 @@ fun LockTimerScreen(
 private fun AwayPanel(currentAbsenceSeconds: Long, todayAwaySeconds: Long) {
     Text(
         text = "TIME SINCE YOU LOCKED",
-        fontSize = 10.sp,
+        fontSize = 8.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 3.sp,
         color = KanColors.Steel,
         textAlign = TextAlign.Center,
     )
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(8.dp))
     Text(
         text = currentAbsenceSeconds.toClockTime(),
-        fontSize = 58.sp,
+        fontSize = 46.sp,
         fontWeight = FontWeight.ExtraLight,
         letterSpacing = (-2.0).sp,
         color = KanColors.TextPrimary,
         textAlign = TextAlign.Center,
-        lineHeight = 60.sp,
+        lineHeight = 48.sp,
     )
-    Spacer(Modifier.height(18.dp))
+    Spacer(Modifier.height(8.dp))
     Text(
         text = "AWAY TODAY",
-        fontSize = 9.sp,
+        fontSize = 8.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 2.6.sp,
         color = KanColors.TextTertiary,
     )
-    Spacer(Modifier.height(6.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
         text = todayAwaySeconds.toHumanDuration(),
-        fontSize = 22.sp,
+        fontSize = 18.sp,
         fontWeight = FontWeight.Light,
         letterSpacing = (-0.4).sp,
         color = KanColors.TextSecondary,
@@ -187,39 +187,39 @@ private fun ChallengePanel(
 ) {
     Text(
         text = if (finished) "CHALLENGE COMPLETE" else "CHALLENGE IN PROGRESS",
-        fontSize = 10.sp,
+        fontSize = 8.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 3.sp,
         color = if (finished) KanColors.PrismGreen else KanColors.Steel,
         textAlign = TextAlign.Center,
     )
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(8.dp))
     Text(
         text = if (finished) "00:00:00" else remainingSeconds.toClockTime(),
-        fontSize = 58.sp,
+        fontSize = 46.sp,
         fontWeight = FontWeight.ExtraLight,
         letterSpacing = (-2.0).sp,
         color = KanColors.TextPrimary,
         textAlign = TextAlign.Center,
-        lineHeight = 60.sp,
+        lineHeight = 48.sp,
     )
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(8.dp))
     Text(
         text = if (finished) {
             "You waited ${durationSeconds.toHumanDuration()}."
         } else {
             "Goal: ${durationSeconds.toHumanDuration()}"
         },
-        fontSize = 11.sp,
+        fontSize = 10.sp,
         fontWeight = FontWeight.Light,
         letterSpacing = 0.4.sp,
         color = KanColors.TextSecondary,
     )
-    Spacer(Modifier.height(14.dp))
+    Spacer(Modifier.height(10.dp))
     TextButton(onClick = onCancel) {
         Text(
             text = if (finished) "CLEAR" else "CANCEL CHALLENGE",
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.8.sp,
             color = KanColors.TextTertiary,
@@ -231,15 +231,15 @@ private fun ChallengePanel(
 private fun ChallengeStarter(onStart: (minutes: Int) -> Unit) {
     Text(
         text = "CHALLENGE YOURSELF",
-        fontSize = 10.sp,
+        fontSize = 8.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 2.6.sp,
         color = KanColors.TextTertiary,
     )
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(8.dp))
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {
         ChallengePresets.forEach { minutes ->
             ChallengeChip(label = labelFor(minutes), onClick = { onStart(minutes) })
@@ -257,8 +257,8 @@ private fun ChallengeChip(label: String, onClick: () -> Unit) {
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            fontSize = 11.sp,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.4.sp,
             color = KanColors.TextPrimary,

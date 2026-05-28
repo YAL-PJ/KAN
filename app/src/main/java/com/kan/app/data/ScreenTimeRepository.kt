@@ -285,6 +285,10 @@ class ScreenTimeRepository private constructor(context: Context) {
         prefs.edit().putBoolean(KEY_OVERLAY_ENABLED, enabled).applyAndPublish()
     }
 
+    fun updateLockScreenTimerEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOCK_SCREEN_TIMER_ENABLED, enabled).applyAndPublish()
+    }
+
     fun isOnboardingCompleted(): Boolean = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
 
     fun markOnboardingCompleted() {
@@ -356,11 +360,12 @@ class ScreenTimeRepository private constructor(context: Context) {
             dailyScreenSeconds = prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L),
             dailyBudgetSeconds = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS),
             dailyBudgetStreak = prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0),
-            lockTimerMode = LockTimerMode.fromStorageValue(prefs.getInt(KEY_LOCK_TIMER_MODE, 0)),
-            overlayStyle = OverlayStyle.fromStorageValue(prefs.getInt(KEY_OVERLAY_STYLE, 0)),
+            lockTimerMode = LockTimerMode.FullScreen,
+            overlayStyle = OverlayStyle.Bar,
             overlayEnabled = prefs.getBoolean(KEY_OVERLAY_ENABLED, true),
+            lockScreenTimerEnabled = prefs.getBoolean(KEY_LOCK_SCREEN_TIMER_ENABLED, true),
             lockScreenVisualization = LockScreenVisualization.fromStorageValue(
-                prefs.getInt(KEY_LOCK_SCREEN_VISUALIZATION, 0),
+                LockScreenVisualization.Pillar.storageValue,
             ),
             currentAbsenceStartedAtMillis = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L),
             lastAbsenceSeconds = prefs.getLong(KEY_LAST_ABSENCE_SECONDS, 0L),
@@ -404,6 +409,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_OVERLAY_STYLE = "overlay_style"
         private const val KEY_OVERLAY_ENABLED = "overlay_enabled"
         private const val KEY_LOCK_SCREEN_VISUALIZATION = "lock_screen_visualization"
+        private const val KEY_LOCK_SCREEN_TIMER_ENABLED = "lock_screen_timer_enabled"
         private const val KEY_DAILY_ABSENCE_SECONDS = "daily_absence_seconds"
         private const val KEY_CHALLENGE_END_AT = "challenge_end_at"
         private const val KEY_CHALLENGE_END_AT_ELAPSED_REALTIME = "challenge_end_at_elapsed_realtime"

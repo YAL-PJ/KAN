@@ -29,8 +29,8 @@ class LockTimerActivity : ComponentActivity() {
     private val finishReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF,
-                Intent.ACTION_USER_PRESENT -> finish()
+                Intent.ACTION_SCREEN_OFF -> finish()
+                Intent.ACTION_USER_PRESENT -> finishAfterChallengeExit()
             }
         }
     }
@@ -58,6 +58,9 @@ class LockTimerActivity : ComponentActivity() {
                     currentAbsenceSeconds = currentAbsenceSecondsNow()
                     challengeRemainingSeconds = currentChallengeRemainingSecondsNow()
                     todayAwaySeconds = currentTodayAwaySecondsNow()
+                    if (challengeActive && challengeRemainingSeconds <= 0L) {
+                        repository.completeChallengeIfDue()
+                    }
                     delay(1_000L)
                 }
             }
@@ -70,6 +73,7 @@ class LockTimerActivity : ComponentActivity() {
                 LockTimerScreen(
                     currentAbsenceSeconds = currentAbsenceSeconds,
                     todayAwaySeconds = todayAwaySeconds,
+                    dailyChallengeSuccesses = snapshot.dailyChallengeSuccesses,
                     visualization = snapshot.lockScreenVisualization,
                     challengeRemainingSeconds = challengeRemainingSeconds,
                     challengeDurationSeconds = snapshot.challengeDurationSeconds,
@@ -96,7 +100,13 @@ class LockTimerActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!isKeyguardLocked()) finish()
+        if (!isKeyguardLocked()) finishAfterChallengeExit()
+    }
+
+    private fun finishAfterChallengeExit() {
+        repository.completeChallengeIfDue()
+        repository.cancelChallenge()
+        finish()
     }
 
     override fun onDestroy() {

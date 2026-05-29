@@ -5,7 +5,8 @@ import java.time.LocalDate
 internal object HistorySerializer {
     private const val ENTRY_DELIMITER = '\n'
     private const val FIELD_DELIMITER = '|'
-    private const val FIELD_COUNT = 4
+    private const val LEGACY_FIELD_COUNT = 4
+    private const val FIELD_COUNT = 5
 
     fun encode(entries: List<DailyHistoryEntry>, limit: Int): String = entries
         .take(limit)
@@ -14,6 +15,7 @@ internal object HistorySerializer {
                 entry.date,
                 entry.screenSeconds,
                 entry.peakAbsenceSeconds,
+                entry.challengeSuccesses,
                 entry.metBudget,
             ).joinToString(FIELD_DELIMITER.toString())
         }
@@ -27,13 +29,20 @@ internal object HistorySerializer {
 
     private fun decodeEntry(line: String): DailyHistoryEntry? {
         val parts = line.split(FIELD_DELIMITER)
-        if (parts.size != FIELD_COUNT) return null
+        if (parts.size != FIELD_COUNT && parts.size != LEGACY_FIELD_COUNT) return null
         val date = runCatching { LocalDate.parse(parts[0]) }.getOrNull() ?: return null
+        val challengeSuccesses = if (parts.size == FIELD_COUNT) {
+            parts[3].toIntOrNull() ?: 0
+        } else {
+            0
+        }
+        val metBudgetIndex = if (parts.size == FIELD_COUNT) 4 else 3
         return DailyHistoryEntry(
             date = date,
             screenSeconds = parts[1].toLongOrNull() ?: 0L,
             peakAbsenceSeconds = parts[2].toLongOrNull() ?: 0L,
-            metBudget = parts[3].toBooleanStrictOrNull() ?: false,
+            challengeSuccesses = challengeSuccesses,
+            metBudget = parts[metBudgetIndex].toBooleanStrictOrNull() ?: false,
         )
     }
 }

@@ -123,6 +123,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         val dailyTotal = prefs.getLong(KEY_DAILY_ABSENCE_SECONDS, 0L) + daySegmentSeconds
         val currentBest = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L)
         val brokeRecord = sessionElapsedSeconds > currentBest
+        completeChallengeIfDue(nowMillis, elapsedRealtimeMillis)
 
         prefs.edit()
             .putLong(KEY_ABSENCE_STARTED_AT, 0L)
@@ -136,6 +137,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_CHALLENGE_END_AT, 0L)
             .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, 0L)
             .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
+            .putBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)
             .applyAndPublish()
 
         return brokeRecord
@@ -152,6 +154,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_CHALLENGE_END_AT, nowMillis + durationMillis)
             .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, elapsedRealtimeMillis + durationMillis)
             .putLong(KEY_CHALLENGE_DURATION_SECONDS, safe)
+            .putBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)
             .applyAndPublish()
     }
 
@@ -160,7 +163,29 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_CHALLENGE_END_AT, 0L)
             .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, 0L)
             .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
+            .putBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)
             .applyAndPublish()
+    }
+
+    fun completeChallengeIfDue(
+        nowMillis: Long = System.currentTimeMillis(),
+        elapsedRealtimeMillis: Long = SystemClock.elapsedRealtime(),
+    ): Boolean {
+        ensureCurrentDay(nowMillis, elapsedRealtimeMillis)
+        val durationSeconds = prefs.getLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
+        if (durationSeconds <= 0L || prefs.getBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)) {
+            return false
+        }
+        if (currentChallengeRemainingMillis(nowMillis, elapsedRealtimeMillis) > 0L) return false
+
+        prefs.edit()
+            .putInt(
+                KEY_DAILY_CHALLENGE_SUCCESSES,
+                prefs.getInt(KEY_DAILY_CHALLENGE_SUCCESSES, 0) + 1,
+            )
+            .putBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, true)
+            .applyAndPublish()
+        return true
     }
 
     fun updateLockScreenVisualization(visualization: LockScreenVisualization) {
@@ -323,6 +348,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         val previousScreen = prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L)
         val storedPeak = prefs.getLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L)
         val budget = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS)
+        val challengeSuccesses = prefs.getInt(KEY_DAILY_CHALLENGE_SUCCESSES, 0)
 
         val daySegmentStart = prefs.getLong(KEY_ABSENCE_DAY_SEGMENT_STARTED_AT, 0L)
         val preSegmentSeconds = if (daySegmentStart in 1L until newDayStartMillis) {
@@ -334,7 +360,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         val metBudget = previousScreen <= budget
         val nextStreak = if (metBudget) prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0) + 1 else 0
         val updatedHistory = listOf(
-            DailyHistoryEntry(storedDate, previousScreen, archivedPeak, metBudget),
+            DailyHistoryEntry(storedDate, previousScreen, archivedPeak, challengeSuccesses, metBudget),
         ) + readHistory()
 
         val absenceOngoing = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L) > 0L
@@ -346,6 +372,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_DAILY_SCREEN_SECONDS, 0L)
             .putLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L)
             .putLong(KEY_DAILY_ABSENCE_SECONDS, 0L)
+            .putInt(KEY_DAILY_CHALLENGE_SUCCESSES, 0)
             .putLong(KEY_ABSENCE_DAY_SEGMENT_STARTED_AT, newDaySegmentStart)
             .putLong(KEY_ABSENCE_DAY_SEGMENT_STARTED_AT_ELAPSED_REALTIME, newDaySegmentStartElapsedRealtime)
             .putInt(KEY_DAILY_BUDGET_STREAK, nextStreak)
@@ -371,8 +398,10 @@ class ScreenTimeRepository private constructor(context: Context) {
             lastAbsenceSeconds = prefs.getLong(KEY_LAST_ABSENCE_SECONDS, 0L),
             allTimeAbsenceRecordSeconds = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L),
             dailyAbsenceSeconds = prefs.getLong(KEY_DAILY_ABSENCE_SECONDS, 0L),
+            dailyChallengeSuccesses = prefs.getInt(KEY_DAILY_CHALLENGE_SUCCESSES, 0),
             challengeEndAtMillis = prefs.getLong(KEY_CHALLENGE_END_AT, 0L),
             challengeDurationSeconds = prefs.getLong(KEY_CHALLENGE_DURATION_SECONDS, 0L),
+            challengeCompletedRecorded = prefs.getBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false),
             overlayX = prefs.getInt(KEY_OVERLAY_X, DEFAULT_OVERLAY_X),
             overlayY = prefs.getInt(KEY_OVERLAY_Y, DEFAULT_OVERLAY_Y),
             history = readHistory(),
@@ -411,9 +440,11 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_LOCK_SCREEN_VISUALIZATION = "lock_screen_visualization"
         private const val KEY_LOCK_SCREEN_TIMER_ENABLED = "lock_screen_timer_enabled"
         private const val KEY_DAILY_ABSENCE_SECONDS = "daily_absence_seconds"
+        private const val KEY_DAILY_CHALLENGE_SUCCESSES = "daily_challenge_successes"
         private const val KEY_CHALLENGE_END_AT = "challenge_end_at"
         private const val KEY_CHALLENGE_END_AT_ELAPSED_REALTIME = "challenge_end_at_elapsed_realtime"
         private const val KEY_CHALLENGE_DURATION_SECONDS = "challenge_duration_seconds"
+        private const val KEY_CHALLENGE_COMPLETED_RECORDED = "challenge_completed_recorded"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_LAST_ACTIVE_TICK_AT = "last_active_tick_at"
         private const val KEY_LAST_ACTIVE_TICK_AT_ELAPSED_REALTIME = "last_active_tick_at_elapsed_realtime"

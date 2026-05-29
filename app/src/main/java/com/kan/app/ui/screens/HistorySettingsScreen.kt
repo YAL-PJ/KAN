@@ -48,6 +48,10 @@ fun HistorySettingsScreen(
         FloatingPanel {
             SectionLabel("DAILY LEDGER")
             Spacer(Modifier.height(18.dp))
+            TodayChallengeWins(snapshot.dailyChallengeSuccesses)
+            if (snapshot.history.isNotEmpty()) {
+                Hairline(alpha = 0.5f)
+            }
             HistoryList(snapshot.history)
         }
 
@@ -152,10 +156,37 @@ private fun Header() {
 }
 
 @Composable
+private fun TodayChallengeWins(count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "TODAY",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.8.sp,
+            color = KanColors.TextTertiary,
+        )
+        Text(
+            text = "$count CHALLENGE WINS",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Light,
+            letterSpacing = 0.2.sp,
+            textAlign = TextAlign.End,
+            color = if (count > 0) KanColors.PrismGreen else KanColors.TextSecondary,
+        )
+    }
+}
+
+@Composable
 private fun HistoryList(entries: List<DailyHistoryEntry>) {
     if (entries.isEmpty()) {
         Text(
-            text = "A completed day will appear here.",
+            text = "Completed days will appear here below today's challenge wins.",
             fontSize = 15.sp,
             fontWeight = FontWeight.Light,
             color = KanColors.TextSecondary,
@@ -189,7 +220,7 @@ private fun HistoryRow(entry: DailyHistoryEntry) {
             color = KanColors.TextTertiary,
         )
         Text(
-            text = "${entry.screenSeconds.toHumanDuration()} PHONE  /  ${entry.peakAbsenceSeconds.toHumanDuration()} AWAY${if (entry.metBudget) "  ✓" else ""}",
+            text = "${entry.screenSeconds.toHumanDuration()} PHONE  /  ${entry.peakAbsenceSeconds.toHumanDuration()} AWAY  /  ${entry.challengeSuccesses} WON${if (entry.metBudget) "  ✓" else ""}",
             fontSize = 12.sp,
             fontWeight = FontWeight.Light,
             letterSpacing = 0.2.sp,

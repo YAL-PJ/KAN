@@ -12,6 +12,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +28,8 @@ import com.kan.app.ui.components.GuardingScaffold
 import com.kan.app.ui.components.Hairline
 import com.kan.app.ui.components.SectionLabel
 import com.kan.app.ui.theme.KanColors
+import com.kan.app.ui.theme.KanTheme
+import com.kan.app.ui.preview.PreviewFixtures
 import java.time.format.DateTimeFormatter
 
 private const val SECONDS_PER_HOUR = 3_600f
@@ -270,4 +273,47 @@ private fun BudgetSlider(
         ),
         modifier = Modifier.padding(top = 18.dp),
     )
+}
+
+@Preview(
+    name = "History settings · phone",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun HistorySettingsScreenPreview() {
+    KanTheme {
+        HistorySettingsScreen(
+            snapshot = PreviewFixtures.completedSnapshot,
+            onBudgetHoursChanged = {},
+            onOverlayEnabledChanged = {},
+            onLockScreenTimerEnabledChanged = {},
+        )
+    }
+}
+
+@Preview(
+    name = "History settings · empty ledger",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun HistorySettingsScreenEmptyPreview() {
+    KanTheme {
+        HistorySettingsScreen(
+            snapshot = PreviewFixtures.completedSnapshot.copy(
+                history = emptyList(),
+                dailyChallengeSuccesses = 0,
+                overlayEnabled = false,
+                lockScreenTimerEnabled = false,
+            ),
+            onBudgetHoursChanged = {},
+            onOverlayEnabledChanged = {},
+            onLockScreenTimerEnabledChanged = {},
+        )
+    }
 }

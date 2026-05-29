@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import com.kan.app.ui.components.FloatingPanel
 import com.kan.app.ui.components.GuardingScaffold
 import com.kan.app.ui.components.SectionLabel
 import com.kan.app.ui.theme.KanColors
+import com.kan.app.ui.theme.KanTheme
 
 @Composable
 fun OnboardingScreen(
@@ -160,6 +162,25 @@ private fun OnboardingButton(text: String, onClick: () -> Unit, muted: Boolean =
             letterSpacing = 1.8.sp,
             color = if (muted) KanColors.TextMuted else KanColors.Steel,
             modifier = Modifier.padding(start = 4.dp),
+        )
+    }
+}
+
+@Preview(
+    name = "Onboarding · first step",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun OnboardingScreenPreview() {
+    KanTheme {
+        OnboardingScreen(
+            appName = "KAN",
+            onRequestNotificationPermission = {},
+            onRequestOverlayPermission = {},
+            onFinish = {},
         )
     }
 }

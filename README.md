@@ -29,6 +29,25 @@ Use GitHub Actions for cloud builds, or command-line Android tooling locally:
 3. If needed, create `local.properties` with your Android SDK path. This file is local-only and must not be committed.
 4. Let Gradle sync using the checked-in wrapper.
 
+
+## Interactive design with Compose Preview
+
+For design iteration, open the project in Android Studio and use the Compose Preview tool window instead of rebuilding and reinstalling the APK after every small UI change. The app includes preview fixtures and `@Preview` entry points for the main app shell, main hub, history/settings, onboarding, and lock-timer screens.
+
+1. Open this repository in Android Studio and let Gradle sync.
+2. Open a screen file such as `app/src/main/java/com/kan/app/ui/screens/MainHubScreen.kt`.
+3. Click **Split** or **Design** to show Compose Preview.
+4. Edit colors, spacing, text, or layout in the Compose files and click **Refresh** if Android Studio does not update automatically.
+5. Use the sample state in `app/src/main/java/com/kan/app/ui/preview/PreviewFixtures.kt` when a screen needs realistic timer/history data.
+
+Useful preview files:
+
+- `MainHubScreen.kt`: primary dashboard and missing-overlay-permission states.
+- `HistorySettingsScreen.kt`: populated and empty ledger states.
+- `OnboardingScreen.kt`: first onboarding step.
+- `LockTimerScreen.kt`: away timer and active challenge states.
+- `KanApp.kt`: full app shell for completed onboarding and first-run onboarding states.
+
 ## Phone-only build flow (no Android Studio)
 
 If you want a no-Android-Studio flow, use GitHub Actions to compile and then install from your phone:

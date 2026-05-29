@@ -7,10 +7,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kan.app.data.KanSnapshot
 import com.kan.app.ui.theme.KanColors
+import com.kan.app.ui.theme.KanTheme
+import com.kan.app.ui.preview.PreviewFixtures
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -63,5 +66,55 @@ fun KanApp(
                 )
             }
         }
+    }
+}
+
+@Preview(
+    name = "App shell · main flow",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun KanAppPreview() {
+    KanTheme {
+        KanApp(
+            snapshot = PreviewFixtures.completedSnapshot,
+            appName = "KAN",
+            hasOverlayPermission = true,
+            onRequestOverlayPermission = {},
+            onRequestNotificationPermission = {},
+            onFinishOnboarding = {},
+            onBudgetHoursChanged = {},
+            onOverlayEnabledChanged = {},
+            onLockScreenTimerEnabledChanged = {},
+            buildStamp = "preview v1.0 (1) · updated 2026-05-29 12:00:00",
+        )
+    }
+}
+
+@Preview(
+    name = "App shell · onboarding",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun KanAppOnboardingPreview() {
+    KanTheme {
+        KanApp(
+            snapshot = PreviewFixtures.onboardingSnapshot,
+            appName = "KAN",
+            hasOverlayPermission = false,
+            onRequestOverlayPermission = {},
+            onRequestNotificationPermission = {},
+            onFinishOnboarding = {},
+            onBudgetHoursChanged = {},
+            onOverlayEnabledChanged = {},
+            onLockScreenTimerEnabledChanged = {},
+            buildStamp = "preview v1.0 (1) · updated 2026-05-29 12:00:00",
+        )
     }
 }

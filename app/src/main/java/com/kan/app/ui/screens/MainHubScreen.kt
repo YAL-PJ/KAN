@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,6 +20,8 @@ import com.kan.app.ui.components.FloatingPanel
 import com.kan.app.ui.components.GuardingScaffold
 import com.kan.app.ui.components.SectionLabel
 import com.kan.app.ui.theme.KanColors
+import com.kan.app.ui.theme.KanTheme
+import com.kan.app.ui.preview.PreviewFixtures
 
 @Composable
 fun MainHubScreen(
@@ -122,6 +125,44 @@ private fun OverlayPermissionButton(onClick: () -> Unit) {
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.8.sp,
             color = KanColors.Steel,
+        )
+    }
+}
+
+@Preview(
+    name = "Main hub · phone",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun MainHubScreenPreview() {
+    KanTheme {
+        MainHubScreen(
+            snapshot = PreviewFixtures.completedSnapshot,
+            hasOverlayPermission = true,
+            onRequestOverlayPermission = {},
+            buildStamp = "preview v1.0 (1) · updated 2026-05-29 12:00:00",
+        )
+    }
+}
+
+@Preview(
+    name = "Main hub · permission prompt",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun MainHubScreenMissingOverlayPermissionPreview() {
+    KanTheme {
+        MainHubScreen(
+            snapshot = PreviewFixtures.completedSnapshot.copy(overlayEnabled = false),
+            hasOverlayPermission = false,
+            onRequestOverlayPermission = {},
+            buildStamp = "preview v1.0 (1) · updated 2026-05-29 12:00:00",
         )
     }
 }

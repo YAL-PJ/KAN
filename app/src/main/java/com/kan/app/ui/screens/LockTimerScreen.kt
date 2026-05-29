@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +42,7 @@ import com.kan.app.domain.toClockTime
 import com.kan.app.domain.toHumanDuration
 import com.kan.app.ui.components.GuardingRing
 import com.kan.app.ui.theme.KanColors
+import com.kan.app.ui.theme.KanTheme
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -550,4 +552,50 @@ private fun prismHue(index: Int, total: Int): Color {
     )
     val slot = (index.toFloat() / total * palette.size).toInt().coerceIn(0, palette.lastIndex)
     return palette[slot]
+}
+
+@Preview(
+    name = "Lock timer · away",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun LockTimerScreenAwayPreview() {
+    KanTheme {
+        LockTimerScreen(
+            currentAbsenceSeconds = 42L * 60 + 18,
+            todayAwaySeconds = 4L * 60 * 60 + 5 * 60,
+            dailyChallengeSuccesses = 4,
+            visualization = LockScreenVisualization.Arc,
+            challengeRemainingSeconds = 0L,
+            challengeDurationSeconds = 0L,
+            onStartChallenge = {},
+            onCancelChallenge = {},
+        )
+    }
+}
+
+@Preview(
+    name = "Lock timer · active challenge",
+    widthDp = 393,
+    heightDp = 852,
+    showBackground = true,
+    backgroundColor = 0xFF04060A,
+)
+@Composable
+private fun LockTimerScreenChallengePreview() {
+    KanTheme {
+        LockTimerScreen(
+            currentAbsenceSeconds = 12L * 60,
+            todayAwaySeconds = 4L * 60 * 60 + 5 * 60,
+            dailyChallengeSuccesses = 4,
+            visualization = LockScreenVisualization.Constellation,
+            challengeRemainingSeconds = 18L * 60,
+            challengeDurationSeconds = 30L * 60,
+            onStartChallenge = {},
+            onCancelChallenge = {},
+        )
+    }
 }

@@ -109,6 +109,7 @@ class ScreenTimeService : Service() {
     private fun enterActiveState() {
         repository.recoverActiveTimeOnRestart()
         val brokeRecord = repository.finishAbsence()
+        repository.beginPhoneSession()
         postTrackingNotification()
         if (brokeRecord) {
             TrackingNotifications.notifyRecordIfAllowed(
@@ -123,6 +124,7 @@ class ScreenTimeService : Service() {
     private fun enterOfflineState() {
         stopActiveTicker()
         overlay.remove()
+        repository.finishPhoneSession()
         repository.beginAbsence()
         postTrackingNotification()
     }
@@ -130,6 +132,7 @@ class ScreenTimeService : Service() {
     private fun showLockedAbsenceState() {
         stopActiveTicker()
         overlay.remove()
+        repository.finishPhoneSession()
         repository.ensureAbsenceStarted()
         if (repository.snapshots.value.lockScreenTimerEnabled) {
             postTrackingNotification(asFullScreenIntent = true)

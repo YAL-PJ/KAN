@@ -17,7 +17,13 @@ class ScreenTimeRepository private constructor(context: Context) {
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val zoneId: ZoneId = ZoneId.systemDefault()
+    private val usageLogStore = UsageLogStore(appContext, USAGE_LOG_LIMIT)
     private val snapshotFlow = MutableStateFlow(readSnapshot())
+
+    init {
+        migrateSharedPreferenceUsageLogs()
+        snapshotFlow.value = readSnapshot()
+    }
 
     val snapshots: StateFlow<KanSnapshot> = snapshotFlow.asStateFlow()
 
@@ -48,6 +54,26 @@ class ScreenTimeRepository private constructor(context: Context) {
         prefs.edit()
             .putLong(KEY_LAST_ACTIVE_TICK_AT, 0L)
             .putLong(KEY_LAST_ACTIVE_TICK_AT_ELAPSED_REALTIME, 0L)
+            .applyAndPublish()
+    }
+
+    fun beginPhoneSession(nowMillis: Long = System.currentTimeMillis()) {
+        ensureCurrentDay(nowMillis)
+        if (prefs.getLong(KEY_ACTIVE_SESSION_STARTED_AT, 0L) > 0L) return
+        prefs.edit()
+            .putLong(KEY_ACTIVE_SESSION_STARTED_AT, nowMillis)
+            .applyAndPublish()
+    }
+
+    fun finishPhoneSession(nowMillis: Long = System.currentTimeMillis()) {
+        val startedAt = prefs.getLong(KEY_ACTIVE_SESSION_STARTED_AT, 0L)
+        if (startedAt <= 0L) return
+        val endedAt = nowMillis.coerceAtLeast(startedAt)
+        usageLogStore.appendPhoneSession(
+            PhoneSessionEntry(startedAtMillis = startedAt, endedAtMillis = endedAt),
+        )
+        prefs.edit()
+            .putLong(KEY_ACTIVE_SESSION_STARTED_AT, 0L)
             .applyAndPublish()
     }
 
@@ -123,7 +149,9 @@ class ScreenTimeRepository private constructor(context: Context) {
         val dailyTotal = prefs.getLong(KEY_DAILY_ABSENCE_SECONDS, 0L) + daySegmentSeconds
         val currentBest = prefs.getLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, 0L)
         val brokeRecord = sessionElapsedSeconds > currentBest
-        completeChallengeIfDue(nowMillis, elapsedRealtimeMillis)
+        val challengeSucceeded = completeChallengeIfDue(nowMillis, elapsedRealtimeMillis) ||
+            prefs.getBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)
+        archiveChallengeAttemptIfActive(nowMillis, challengeSucceeded)
 
         prefs.edit()
             .putLong(KEY_ABSENCE_STARTED_AT, 0L)
@@ -134,6 +162,7 @@ class ScreenTimeRepository private constructor(context: Context) {
             .putLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, dailyPeak)
             .putLong(KEY_DAILY_ABSENCE_SECONDS, dailyTotal)
             .putLong(KEY_ALL_TIME_ABSENCE_RECORD_SECONDS, maxOf(currentBest, sessionElapsedSeconds))
+            .putLong(KEY_CHALLENGE_STARTED_AT, 0L)
             .putLong(KEY_CHALLENGE_END_AT, 0L)
             .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, 0L)
             .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
@@ -151,6 +180,7 @@ class ScreenTimeRepository private constructor(context: Context) {
         val safe = durationSeconds.coerceAtLeast(1L)
         val durationMillis = safe * 1_000L
         prefs.edit()
+            .putLong(KEY_CHALLENGE_STARTED_AT, nowMillis)
             .putLong(KEY_CHALLENGE_END_AT, nowMillis + durationMillis)
             .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, elapsedRealtimeMillis + durationMillis)
             .putLong(KEY_CHALLENGE_DURATION_SECONDS, safe)
@@ -159,12 +189,11 @@ class ScreenTimeRepository private constructor(context: Context) {
     }
 
     fun cancelChallenge() {
-        prefs.edit()
-            .putLong(KEY_CHALLENGE_END_AT, 0L)
-            .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, 0L)
-            .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
-            .putBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)
-            .applyAndPublish()
+        cancelChallenge(System.currentTimeMillis())
+    }
+
+    fun cancelChallenge(nowMillis: Long) {
+        archiveChallengeAttempt(nowMillis = nowMillis, successful = false)
     }
 
     fun completeChallengeIfDue(
@@ -190,6 +219,34 @@ class ScreenTimeRepository private constructor(context: Context) {
 
     fun updateLockScreenVisualization(visualization: LockScreenVisualization) {
         prefs.edit().putInt(KEY_LOCK_SCREEN_VISUALIZATION, visualization.storageValue).applyAndPublish()
+    }
+
+    private fun archiveChallengeAttempt(
+        nowMillis: Long = System.currentTimeMillis(),
+        successful: Boolean = prefs.getBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false),
+    ) {
+        archiveChallengeAttemptIfActive(nowMillis, successful)
+        prefs.edit()
+            .putLong(KEY_CHALLENGE_STARTED_AT, 0L)
+            .putLong(KEY_CHALLENGE_END_AT, 0L)
+            .putLong(KEY_CHALLENGE_END_AT_ELAPSED_REALTIME, 0L)
+            .putLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
+            .putBoolean(KEY_CHALLENGE_COMPLETED_RECORDED, false)
+            .applyAndPublish()
+    }
+
+    private fun archiveChallengeAttemptIfActive(nowMillis: Long, successful: Boolean) {
+        val startedAt = prefs.getLong(KEY_CHALLENGE_STARTED_AT, 0L)
+        val durationSeconds = prefs.getLong(KEY_CHALLENGE_DURATION_SECONDS, 0L)
+        if (startedAt <= 0L || durationSeconds <= 0L) return
+        usageLogStore.appendChallengeAttempt(
+            ChallengeAttemptEntry(
+                startedAtMillis = startedAt,
+                endedAtMillis = nowMillis.coerceAtLeast(startedAt),
+                plannedDurationSeconds = durationSeconds,
+                successful = successful,
+            ),
+        )
     }
 
     fun currentAbsenceElapsedMillis(
@@ -347,6 +404,7 @@ class ScreenTimeRepository private constructor(context: Context) {
     ) {
         val previousScreen = prefs.getLong(KEY_DAILY_SCREEN_SECONDS, 0L)
         val storedPeak = prefs.getLong(KEY_DAILY_PEAK_ABSENCE_SECONDS, 0L)
+        val storedAbsence = prefs.getLong(KEY_DAILY_ABSENCE_SECONDS, 0L)
         val budget = prefs.getLong(KEY_DAILY_BUDGET_SECONDS, DEFAULT_DAILY_BUDGET_SECONDS)
         val challengeSuccesses = prefs.getInt(KEY_DAILY_CHALLENGE_SUCCESSES, 0)
 
@@ -356,11 +414,12 @@ class ScreenTimeRepository private constructor(context: Context) {
         } else {
             0L
         }
+        val archivedAbsence = storedAbsence + preSegmentSeconds
         val archivedPeak = maxOf(storedPeak, preSegmentSeconds)
         val metBudget = previousScreen <= budget
         val nextStreak = if (metBudget) prefs.getInt(KEY_DAILY_BUDGET_STREAK, 0) + 1 else 0
         val updatedHistory = listOf(
-            DailyHistoryEntry(storedDate, previousScreen, archivedPeak, challengeSuccesses, metBudget),
+            DailyHistoryEntry(storedDate, previousScreen, archivedAbsence, archivedPeak, challengeSuccesses, metBudget),
         ) + readHistory()
 
         val absenceOngoing = prefs.getLong(KEY_ABSENCE_STARTED_AT, 0L) > 0L
@@ -405,12 +464,35 @@ class ScreenTimeRepository private constructor(context: Context) {
             overlayX = prefs.getInt(KEY_OVERLAY_X, DEFAULT_OVERLAY_X),
             overlayY = prefs.getInt(KEY_OVERLAY_Y, DEFAULT_OVERLAY_Y),
             history = readHistory(),
+            phoneSessions = readPhoneSessions(),
+            challengeAttempts = readChallengeAttempts(),
             onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false),
         )
     }
 
     private fun readHistory(): List<DailyHistoryEntry> =
         HistorySerializer.decode(prefs.getString(KEY_HISTORY, null), HISTORY_LIMIT)
+
+    private fun readPhoneSessions(): List<PhoneSessionEntry> = usageLogStore.readPhoneSessions()
+
+    private fun readChallengeAttempts(): List<ChallengeAttemptEntry> = usageLogStore.readChallengeAttempts()
+
+    private fun migrateSharedPreferenceUsageLogs() {
+        val encodedPhoneSessions = prefs.getString(KEY_PHONE_SESSIONS, null)
+        val encodedChallengeAttempts = prefs.getString(KEY_CHALLENGE_ATTEMPTS, null)
+        if (encodedPhoneSessions.isNullOrEmpty() && encodedChallengeAttempts.isNullOrEmpty()) return
+
+        usageLogStore.importPhoneSessions(
+            UsageLogSerializer.decodePhoneSessions(encodedPhoneSessions, USAGE_LOG_LIMIT),
+        )
+        usageLogStore.importChallengeAttempts(
+            UsageLogSerializer.decodeChallengeAttempts(encodedChallengeAttempts, USAGE_LOG_LIMIT),
+        )
+        prefs.edit()
+            .remove(KEY_PHONE_SESSIONS)
+            .remove(KEY_CHALLENGE_ATTEMPTS)
+            .apply()
+    }
 
     private fun SharedPreferences.Editor.applyAndPublish() {
         apply()
@@ -448,12 +530,17 @@ class ScreenTimeRepository private constructor(context: Context) {
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_LAST_ACTIVE_TICK_AT = "last_active_tick_at"
         private const val KEY_LAST_ACTIVE_TICK_AT_ELAPSED_REALTIME = "last_active_tick_at_elapsed_realtime"
+        private const val KEY_ACTIVE_SESSION_STARTED_AT = "active_session_started_at"
+        private const val KEY_PHONE_SESSIONS = "phone_sessions"
+        private const val KEY_CHALLENGE_STARTED_AT = "challenge_started_at"
+        private const val KEY_CHALLENGE_ATTEMPTS = "challenge_attempts"
 
         private const val SECONDS_PER_HOUR = 3_600f
         private const val DEFAULT_DAILY_BUDGET_SECONDS = 2L * 60L * 60L
         private const val DEFAULT_OVERLAY_X = 0
         private const val DEFAULT_OVERLAY_Y = 240
-        private const val HISTORY_LIMIT = 7
+        private const val HISTORY_LIMIT = 730
+        private const val USAGE_LOG_LIMIT = 2_000
         private const val MAX_RECOVERY_SECONDS = 60L
 
         const val MIN_BUDGET_HOURS = 0.5f

@@ -26,5 +26,7 @@ data class KanSnapshot(
     val overlayX: Int,
     val overlayY: Int,
     val history: List<DailyHistoryEntry>,
+    val phoneSessions: List<PhoneSessionEntry>,
+    val challengeAttempts: List<ChallengeAttemptEntry>,
     val onboardingCompleted: Boolean,
 )
